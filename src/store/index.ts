@@ -26,6 +26,8 @@ import {
   generateBarcodeString,
 } from '@/utils';
 
+import { SupabaseService } from '@/utils/supabaseService';
+
 const defaultInitial: AppState = {
   theme: 'light',
   isAuthenticated: false,
@@ -45,6 +47,7 @@ const defaultInitial: AppState = {
 export type TimePeriodFilter = 'Current Shift' | 'Today' | 'This Week' | 'This Month' | 'This Year';
 
 interface AppActions {
+  initFromSupabase: () => Promise<void>;
   setTheme: (t: AppState['theme']) => void;
   toggleTheme: () => void;
   loginAsRole: (role: UserRole) => void;
@@ -120,6 +123,38 @@ export const useAppStore = create<AppState & AppActions>()(
     (set, get) => ({
       ...defaultInitial,
 
+      initFromSupabase: async () => {
+        try {
+          // Auto-seed if database is completely new
+          await SupabaseService.seedInitialIfEmpty({
+            users: seedUsers,
+            inventory: seedInventory,
+            requisitions: seedRequisitions,
+            issuanceLogs: seedIssuanceLogs,
+            emailLogs: seedEmailLogs,
+          });
+
+          // Fetch latest state from Supabase
+          const [inv, users, reqs, logs, emails] = await Promise.all([
+            SupabaseService.fetchInventory(),
+            SupabaseService.fetchUsers(),
+            SupabaseService.fetchRequisitions(),
+            SupabaseService.fetchIssuanceLogs(),
+            SupabaseService.fetchEmailLogs(),
+          ]);
+
+          set(s => ({
+            inventory: inv && inv.length > 0 ? inv : s.inventory,
+            users: users && users.length > 0 ? users : s.users,
+            requisitions: reqs && reqs.length > 0 ? reqs : s.requisitions,
+            issuanceLogs: logs && logs.length > 0 ? logs : s.issuanceLogs,
+            emailLogs: emails && emails.length > 0 ? emails : s.emailLogs,
+          }));
+        } catch (err) {
+          console.warn('Supabase initialization fallback to local storage:', err);
+        }
+      },
+
       setTheme: theme => set({ theme }),
       toggleTheme: () => set(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
 
@@ -173,19 +208,28 @@ export const useAppStore = create<AppState & AppActions>()(
           createdAt: Date.now(),
         };
         set(s => ({ inventory: [...s.inventory, item] }));
+        SupabaseService.upsertItem(item);
       },
-      updateInventoryItem: (id, patch) =>
+      updateInventoryItem: (id, patch) => {
         set(s => ({
           inventory: s.inventory.map(it => (it.id === id ? { ...it, ...patch } : it)),
-        })),
-      deleteInventoryItem: id =>
-        set(s => ({ inventory: s.inventory.filter(it => it.id !== id) })),
-      adjustStock: (itemId, delta) =>
+        }));
+        const updated = get().inventory.find(it => it.id === id);
+        if (updated) SupabaseService.upsertItem(updated);
+      },
+      deleteInventoryItem: id => {
+        set(s => ({ inventory: s.inventory.filter(it => it.id !== id) }));
+        SupabaseService.deleteItem(id);
+      },
+      adjustStock: (itemId, delta) => {
         set(s => ({
           inventory: s.inventory.map(it =>
             it.id === itemId ? { ...it, quantity: Math.max(0, it.quantity + delta) } : it,
           ),
-        })),
+        }));
+        const updated = get().inventory.find(it => it.id === itemId);
+        if (updated) SupabaseService.upsertItem(updated);
+      },
 
       getItemStatus: item => {
         if (item.quantity === 0) return 'red';
@@ -433,6 +477,7 @@ export const useAppStore = create<AppState & AppActions>()(
           eventType: 'RequisitionSubmitted',
           requisitionId: req.id,
         });
+        SupabaseService.upsertRequisition(req);
         return req;
       },
 
@@ -451,6 +496,7 @@ export const useAppStore = create<AppState & AppActions>()(
         }));
         const req = get().requisitions.find(r => r.id === id);
         if (req) {
+          SupabaseService.upsertRequisition(req);
           get().recordEmail({
             from: get().currentUser?.name || 'Warehouse Team',
             fromRole: get().currentUser?.role,
@@ -477,7 +523,7 @@ export const useAppStore = create<AppState & AppActions>()(
           if (inv) {
             adjustStock(inv.id, -issued);
             const newLevel = inv.quantity - issued;
-            logs.push({
+            const newLog: IssuanceLog = {
               id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               timestamp: Date.now(),
               requisitionId: req.id,
@@ -492,7 +538,9 @@ export const useAppStore = create<AppState & AppActions>()(
               shiftId: activeShift,
               purpose: req.purpose,
               updatedStockLevel: Math.max(0, newLevel),
-            });
+            };
+            logs.push(newLog);
+            SupabaseService.addIssuanceLog(newLog);
           }
         });
         set(s => ({
@@ -508,6 +556,8 @@ export const useAppStore = create<AppState & AppActions>()(
           ),
           issuanceLogs: [...s.issuanceLogs, ...logs],
         }));
+        const updatedReq = get().requisitions.find(r => r.id === id);
+        if (updatedReq) SupabaseService.upsertRequisition(updatedReq);
         recordEmail({
           from: staff,
           fromRole: currentUser?.role,
@@ -537,6 +587,7 @@ export const useAppStore = create<AppState & AppActions>()(
         }));
         const req = get().requisitions.find(r => r.id === id);
         if (req) {
+          SupabaseService.upsertRequisition(req);
           get().recordEmail({
             from: get().currentUser?.name || 'Warehouse Team',
             fromRole: get().currentUser?.role,
@@ -574,6 +625,7 @@ export const useAppStore = create<AppState & AppActions>()(
           updatedStockLevel: Math.max(0, newLevel),
         };
         set(s => ({ issuanceLogs: [...s.issuanceLogs, log] }));
+        SupabaseService.addIssuanceLog(log);
         recordEmail({
           from: staff,
           fromRole: currentUser?.role,
@@ -623,6 +675,7 @@ export const useAppStore = create<AppState & AppActions>()(
           avatarInitials: initials || 'NU',
         };
         set(s => ({ users: [...s.users, user] }));
+        SupabaseService.upsertUser(user);
         get().recordEmail({
           from: get().currentUser?.name || 'System',
           fromRole: get().currentUser?.role,

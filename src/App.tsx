@@ -20,11 +20,16 @@ import AppLayout from '@/components/layout/AppLayout';
 import PageWrapper from '@/components/layout/PageWrapper';
 
 export default function App() {
-  const { theme, isAuthenticated, activePage } = useAppStore(s => ({
+  const { theme, isAuthenticated, activePage, initFromSupabase } = useAppStore(s => ({
     theme: s.theme,
     isAuthenticated: s.isAuthenticated,
     activePage: s.activePage,
+    initFromSupabase: s.initFromSupabase,
   }));
+
+  useEffect(() => {
+    initFromSupabase();
+  }, [initFromSupabase]);
 
   useEffect(() => {
     const root = document.documentElement;
