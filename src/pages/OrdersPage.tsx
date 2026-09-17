@@ -417,7 +417,7 @@ function MetricCard({
       </div>
 
       <div className="mt-2 min-w-0">
-        <p className="text-xl sm:text-2xl md:text-3xl font-extrabold tabular-nums tracking-tight truncate">
+        <p className="text-xl sm:text-2xl md:text-3xl font-extrabold tabular-nums tracking-tight break-all">
           {formatter ? formatter(value) : value}
         </p>
         {subtitle && <p className="mt-1 text-[11px] sm:text-xs text-muted truncate">{subtitle}</p>}
