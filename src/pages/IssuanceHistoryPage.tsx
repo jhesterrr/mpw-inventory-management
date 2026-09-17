@@ -265,7 +265,7 @@ function MetricCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
-          <p className="mt-2 text-xl sm:text-2xl font-black tabular-nums break-all">{formatter ? formatter(value) : formatNumber(value)}</p>
+          <p className="mt-2 text-lg sm:text-xl font-bold tabular-nums break-words">{formatter ? formatter(value) : formatNumber(value)}</p>
         </div>
         <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center shrink-0', t)}>
           <Icon className="w-5 h-5" />

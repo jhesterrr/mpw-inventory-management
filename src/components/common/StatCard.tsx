@@ -98,7 +98,7 @@ export default function StatCard({
 
       <div className="relative z-10 mt-2 min-w-0">
         <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
-          <p className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight font-sans break-all">
+          <p className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight font-sans break-words">
             {formatted}
           </p>
           {trend && (
