@@ -24,6 +24,7 @@ import StatusBadge from '@/components/common/StatusBadge';
 import BarcodeDisplay from '@/components/common/BarcodeDisplay';
 import AnimatedList from '@/components/common/AnimatedList';
 import PillNav from '@/components/common/PillNav';
+import MobileStockPillNav from '@/components/inventory/MobileStockPillNav';
 import Modal from '@/components/common/Modal';
 import { useAppStore, useHasRole } from '@/store';
 import type { InventoryItem, SortDir, SortField } from '@/types';
@@ -254,78 +255,90 @@ export default function InventoryPage() {
         </div>
       </section>
 
-      {/* PillNav Categorization Component from React Bits */}
-      <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2 sm:p-2.5 rounded-2xl surface surface-border shadow-sm">
-        <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-          <PillNav
-            logo={
-              <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#800020] flex items-center justify-center text-white shadow-sm">
-                <Boxes className="w-4 h-4 text-white" />
-              </div>
-            }
-            logoAlt="MPW Inventory Status"
-            items={[
-              {
-                label: 'All Items',
-                href: 'all',
-                badge: stockCounts.all,
-                onClick: () => setStockFilter('all'),
-              },
-              {
-                label: 'In Stock',
-                href: 'in-stock',
-                badge: stockCounts.inStock,
-                onClick: () => setStockFilter('in-stock'),
-              },
-              {
-                label: 'Reorder Point',
-                href: 'reorder',
-                badge: stockCounts.reorder,
-                onClick: () => setStockFilter('reorder'),
-              },
-              {
-                label: 'Out of Stock',
-                href: 'out-of-stock',
-                badge: stockCounts.outOfStock,
-                onClick: () => setStockFilter('out-of-stock'),
-              },
-            ]}
-            activeHref={stockFilter}
-            baseColor={s.theme === 'dark' ? '#1E2026' : '#500B18'}
-            pillColor={s.theme === 'dark' ? '#2A2D35' : '#FFFFFF'}
-            pillTextColor={s.theme === 'dark' ? '#F5F5F7' : '#500B18'}
-            hoveredPillTextColor={s.theme === 'dark' ? '#D4AF37' : '#FFFFFF'}
-            ease="power2.easeOut"
-            initialLoadAnimation={true}
+      {/* PillNav Categorization Component */}
+      <section className="p-2 sm:p-2.5 rounded-2xl surface surface-border shadow-sm">
+        {/* Mobile View (< md) */}
+        <div className="block md:hidden w-full">
+          <MobileStockPillNav
+            currentFilter={stockFilter}
+            onFilterChange={setStockFilter}
+            counts={stockCounts}
           />
         </div>
 
-        {/* Live Filter Indicator Pill */}
-        <div className="hidden lg:flex items-center gap-2 text-xs text-muted pr-2">
-          {stockFilter === 'all' && (
-            <span className="flex items-center gap-1.5 font-medium">
-              <span className="w-2 h-2 rounded-full bg-slate-400" />
-              Showing all inventory items ({items.length})
-            </span>
-          )}
-          {stockFilter === 'in-stock' && (
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Healthy stock levels &gt; reorder point ({items.length})
-            </span>
-          )}
-          {stockFilter === 'reorder' && (
-            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Items at or below reorder threshold ({items.length})
-            </span>
-          )}
-          {stockFilter === 'out-of-stock' && (
-            <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
-              <XCircle className="w-3.5 h-3.5" />
-              Depleted inventory items ({items.length})
-            </span>
-          )}
+        {/* Desktop View (>= md) */}
+        <div className="hidden md:flex items-center justify-between gap-3 w-full">
+          <div className="flex items-center gap-2 min-w-0">
+            <PillNav
+              logo={
+                <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#800020] flex items-center justify-center text-white shadow-sm">
+                  <Boxes className="w-4 h-4 text-white" />
+                </div>
+              }
+              logoAlt="MPW Inventory Status"
+              items={[
+                {
+                  label: 'All Items',
+                  href: 'all',
+                  badge: stockCounts.all,
+                  onClick: () => setStockFilter('all'),
+                },
+                {
+                  label: 'In Stock',
+                  href: 'in-stock',
+                  badge: stockCounts.inStock,
+                  onClick: () => setStockFilter('in-stock'),
+                },
+                {
+                  label: 'Reorder Point',
+                  href: 'reorder',
+                  badge: stockCounts.reorder,
+                  onClick: () => setStockFilter('reorder'),
+                },
+                {
+                  label: 'Out of Stock',
+                  href: 'out-of-stock',
+                  badge: stockCounts.outOfStock,
+                  onClick: () => setStockFilter('out-of-stock'),
+                },
+              ]}
+              activeHref={stockFilter}
+              baseColor={s.theme === 'dark' ? '#1E2026' : '#500B18'}
+              pillColor={s.theme === 'dark' ? '#2A2D35' : '#FFFFFF'}
+              pillTextColor={s.theme === 'dark' ? '#F5F5F7' : '#500B18'}
+              hoveredPillTextColor={s.theme === 'dark' ? '#D4AF37' : '#FFFFFF'}
+              ease="power2.easeOut"
+              initialLoadAnimation={true}
+            />
+          </div>
+
+          {/* Live Filter Indicator Pill */}
+          <div className="hidden lg:flex items-center gap-2 text-xs text-muted pr-2">
+            {stockFilter === 'all' && (
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 rounded-full bg-slate-400" />
+                Showing all inventory items ({items.length})
+              </span>
+            )}
+            {stockFilter === 'in-stock' && (
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Healthy stock levels &gt; reorder point ({items.length})
+              </span>
+            )}
+            {stockFilter === 'reorder' && (
+              <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Items at or below reorder threshold ({items.length})
+              </span>
+            )}
+            {stockFilter === 'out-of-stock' && (
+              <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
+                <XCircle className="w-3.5 h-3.5" />
+                Depleted inventory items ({items.length})
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
