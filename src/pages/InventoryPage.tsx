@@ -256,7 +256,7 @@ export default function InventoryPage() {
 
       {/* PillNav Categorization Component from React Bits */}
       <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2 sm:p-2.5 rounded-2xl surface surface-border shadow-sm">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
           <PillNav
             logo={
               <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#800020] flex items-center justify-center text-white shadow-sm">
