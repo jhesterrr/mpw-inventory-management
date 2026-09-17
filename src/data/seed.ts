@@ -1,0 +1,562 @@
+import type { InventoryItem, User, Requisition, IssuanceLog, EmailLog, ShiftId } from '@/types';
+import { generateBarcodeString, lastNMonths, startOfDay, startOfMonth, startOfWeek, startOfYear } from '@/utils';
+
+const now = Date.now();
+const day = 86_400_000;
+
+function randomBetween(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function mkId(prefix: string, idx: number) {
+  return `${prefix}-${String(idx).padStart(4, '0')}`;
+}
+
+export const seedUsers: User[] = [
+  {
+    id: 'u-editor-001',
+    name: 'Admin User',
+    email: 'admin@mpw.com',
+    role: 'editor',
+    department: 'Head Office',
+    dept: 'Head Office',
+    active: true,
+    password: 'mpw@123',
+    avatarInitials: 'AU',
+  },
+  {
+    id: 'u-warehouse-001',
+    name: 'Marco Reyes',
+    email: 'marco.reyes@mpw.com',
+    role: 'warehouse',
+    department: 'Warehouse Operations',
+    dept: 'Warehouse Operations',
+    active: true,
+    password: 'mpw@123',
+    avatarInitials: 'MR',
+  },
+  {
+    id: 'u-customer-001',
+    name: 'Elena Santos',
+    email: 'elena.santos@mpw.com',
+    role: 'customer',
+    department: 'Project Alpha',
+    dept: 'Project Alpha',
+    active: true,
+    password: 'mpw@123',
+    avatarInitials: 'ES',
+  },
+  {
+    id: 'u-customer-002',
+    name: 'David Chen',
+    email: 'david.chen@mpw.com',
+    role: 'customer',
+    department: 'Engineering',
+    dept: 'Engineering',
+    active: true,
+    password: 'mpw@123',
+    avatarInitials: 'DC',
+  },
+  {
+    id: 'u-customer-003',
+    name: 'Priya Patel',
+    email: 'priya.patel@mpw.com',
+    role: 'customer',
+    department: 'Facilities',
+    dept: 'Facilities',
+    active: true,
+    password: 'mpw@123',
+    avatarInitials: 'PP',
+  },
+];
+
+interface SeedSpec {
+  sku: string;
+  name: string;
+  category: InventoryItem['category'];
+  unit: string;
+  qty: number;
+  reorder: number;
+  cost: number;
+  supplier: string;
+  location: string;
+}
+
+const specs: SeedSpec[] = [
+  { sku: 'MP020-00282', name: 'Fittings, Straight, Mdl:KQ2H04-01AS', category: 'Common', unit: 'Piece', qty: 8, reorder: 13, cost: 4.75, supplier: 'SMC Automation', location: 'R25-01-01' },
+  { sku: 'MP020-00284', name: 'Fittings, Straight, Mdl:KQ2H06-01AS', category: 'Common', unit: 'Piece', qty: 12, reorder: 5, cost: 6.0, supplier: 'SMC Automation', location: 'R25-01-03' },
+  { sku: 'MP020-00285', name: 'Fittings, Straight, Mdl:KQ2H06-02AS', category: 'Common', unit: 'Piece', qty: 13, reorder: 5, cost: 7.25, supplier: 'SMC Automation', location: 'R25-01-04' },
+  { sku: 'MP020-00286', name: 'Fittings, Straight, Mdl:KQ2H06-03AS', category: 'Common', unit: 'Piece', qty: 20, reorder: 6, cost: 8.5, supplier: 'SMC Automation', location: 'R25-01-05' },
+  { sku: 'MP020-00287', name: 'Fittings, Straight, Mdl:KQ2H08-01AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'SMC Automation', location: 'R25-01-06' },
+  { sku: 'MP020-00288', name: 'Fittings, Straight, Mdl:KQ2H08-02AS', category: 'Common', unit: 'Piece', qty: 8, reorder: 13, cost: 11.0, supplier: 'SMC Automation', location: 'R25-01-07' },
+  { sku: 'MP020-00289', name: 'Fittings, Straight, Mdl:KQ2H08-03AS', category: 'Common', unit: 'Piece', qty: 11, reorder: 5, cost: 3.5, supplier: 'SMC Automation', location: 'R25-01-08' },
+  { sku: 'MP020-00290', name: 'Fittings, Straight, Mdl:KQ2H10-01AS', category: 'Common', unit: 'Piece', qty: 20, reorder: 6, cost: 4.75, supplier: 'SMC Automation', location: 'R25-01-09' },
+  { sku: 'MP020-00291', name: 'Fittings, Straight, Mdl:KQ2H10-02AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 6.0, supplier: 'SMC Automation', location: 'R25-01-1A' },
+  { sku: 'MP020-00292', name: 'Fittings, Straight, Mdl:KQ2H10-03AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 7.25, supplier: 'SMC Automation', location: 'R25-01-1B' },
+  { sku: 'MP020-00293', name: 'Fittings, Straight, Mdl:KQ2H10-04AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R25-01-1C' },
+  { sku: 'MP020-00294', name: 'Fittings, Straight, Mdl:KQ2H12-02AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'SMC Automation', location: 'R25-01-1D' },
+  { sku: 'MP020-00295', name: 'Fittings, Straight, Mdl:KQ2H12-03AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'SMC Automation', location: 'R25-02-01' },
+  { sku: 'MP020-00296', name: 'Fittings, Straight, Mdl:KQ2H12-04AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 3.5, supplier: 'SMC Automation', location: 'R25-02-02' },
+  { sku: 'MP020-00297', name: 'Fittings, Straight, Mdl:KQ2H06-00A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 4.75, supplier: 'SMC Automation', location: 'R25-02-03' },
+  { sku: 'MP020-00298', name: 'Fittings, Straight, Mdl:KQ2H06-08A', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 6.0, supplier: 'SMC Automation', location: 'R25-02-04' },
+  { sku: 'MP020-00299', name: 'Fittings, Straight, Mdl:KQ2H08-00A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 7.25, supplier: 'SMC Automation', location: 'R25-02-05' },
+  { sku: 'MP020-00300', name: 'Fittings, Straight, Mdl:KQ2H08-10A', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R25-02-06' },
+  { sku: 'MP020-00301', name: 'Fittings, Straight, Mdl:KQ2H10-00A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'SMC Automation', location: 'R25-02-07' },
+  { sku: 'MP020-00302', name: 'Fittings, Straight, Mdl:KQ2H10-12A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'SMC Automation', location: 'R25-02-08' },
+  { sku: 'MP020-00303', name: 'Fittings, Straight, Mdl:KQ2H12-00A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 3.5, supplier: 'SMC Automation', location: 'R25-02-09' },
+  { sku: 'MP020-00305', name: 'Fittings, Elbow, Mdl: KQ2L04-02AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 4.75, supplier: 'SMC Automation', location: 'R25-02-2B' },
+  { sku: 'MP020-00306', name: 'Fittings, Elbow, Mdl: KQ2L06-01AS', category: 'Common', unit: 'Piece', qty: 29, reorder: 8, cost: 6.0, supplier: 'SMC Automation', location: 'R25-02-2C' },
+  { sku: 'MP020-00307', name: 'Fittings, Elbow, Mdl: KQ2L06-02AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 7.25, supplier: 'SMC Automation', location: 'R25-02-2D' },
+  { sku: 'MP020-00308', name: 'Fittings, Elbow, Mdl: KQ2L06-03AS', category: 'Common', unit: 'Piece', qty: 3, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R25-03-01' },
+  { sku: 'MP020-00310', name: 'Fittings, Elbow, Mdl: KQ2L08-01AS', category: 'Common', unit: 'Piece', qty: 20, reorder: 6, cost: 9.75, supplier: 'SMC Automation', location: 'R25-03-02' },
+  { sku: 'MP020-00311', name: 'Fittings, Elbow, Mdl: KQ2L08-02AS', category: 'Common', unit: 'Piece', qty: 13, reorder: 5, cost: 11.0, supplier: 'SMC Automation', location: 'R25-03-03' },
+  { sku: 'MP020-00312', name: 'Fittings, Elbow, Mdl: KQ2L08-03AS', category: 'Common', unit: 'Piece', qty: 4, reorder: 10, cost: 3.5, supplier: 'SMC Automation', location: 'R25-03-04' },
+  { sku: 'MP020-00313', name: 'Fittings, Elbow, Mdl: KQ2L10-01AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 4.75, supplier: 'SMC Automation', location: 'R25-03-05' },
+  { sku: 'MP020-00314', name: 'Fittings, Elbow, Mdl: KQ2L10-02AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 6.0, supplier: 'SMC Automation', location: 'R25-03-06' },
+  { sku: 'MP020-00315', name: 'Fittings, Elbow, Mdl: KQ2L10-03AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 7.25, supplier: 'SMC Automation', location: 'R25-03-07' },
+  { sku: 'MP020-00316', name: 'Fittings, Elbow, Mdl: KQ2L10-04AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R25-03-08' },
+  { sku: 'MP020-00317', name: 'Fittings, Elbow KQL12-01,', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'SMC Automation', location: 'R25-03-09' },
+  { sku: 'MP020-00318', name: 'Fittings, Elbow, Mdl: KQ2L12-02AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'SMC Automation', location: 'R25-03-3A' },
+  { sku: 'MP020-00319', name: 'Fittings, Elbow, Mdl: KQ2L12-03AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 3.5, supplier: 'SMC Automation', location: 'R25-03-3B' },
+  { sku: 'MP020-00320', name: 'Fittings, Elbow, Mdl: KQ2L12-04AS', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 4.75, supplier: 'SMC Automation', location: 'R25-03-3C' },
+  { sku: 'MP020-00321', name: 'Fittings, Elbow, Mdl: KQ2L06-00A', category: 'Common', unit: 'Piece', qty: 10, reorder: 5, cost: 6.0, supplier: 'SMC Automation', location: 'R25-03-3D' },
+  { sku: 'MP020-00655', name: 'Speed controller  AS3201F-M3-12S', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R25-03-3E' },
+  { sku: 'MP020-00322', name: 'Fittings, Elbow, Mdl: KQ2L06-10A', category: 'Common', unit: 'Piece', qty: 10, reorder: 5, cost: 8.5, supplier: 'SMC Automation', location: 'R25-04-01' },
+  { sku: 'MP020-00323', name: 'Fittings, Elbow, Mdl: KQ2L08-00A', category: 'Common', unit: 'Piece', qty: 5, reorder: 10, cost: 9.75, supplier: 'SMC Automation', location: 'R25-04-02' },
+  { sku: 'MP020-00324', name: 'Fittings, Elbow, Mdl: KQ2L10-00A', category: 'Common', unit: 'Piece', qty: 8, reorder: 13, cost: 11.0, supplier: 'SMC Automation', location: 'R25-04-03' },
+  { sku: 'MP020-00326', name: 'Fittings, Elbow, Mdl: KQ2L12-00A', category: 'Common', unit: 'Piece', qty: 4, reorder: 10, cost: 3.5, supplier: 'SMC Automation', location: 'R25-04-05' },
+  { sku: 'MP020-00327', name: 'Fittings, Tee, Mdl: KQ2T04-00A', category: 'Common', unit: 'Piece', qty: 2, reorder: 10, cost: 4.75, supplier: 'SMC Automation', location: 'R25-04-06' },
+  { sku: 'MP020-00380', name: 'Fittings, One Touch Tee Union', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 6.0, supplier: 'SMC Automation', location: 'R25-04-07' },
+  { sku: 'MP020-00328', name: 'Fittings, Tee, Mdl: KQ2T08-00A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 7.25, supplier: 'SMC Automation', location: 'R25-04-08' },
+  { sku: 'MP020-00656', name: 'Fittings Elbow KQL16-04S', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R25-04-09' },
+  { sku: 'MP020-00382', name: 'Fittings, Tee, KQT 08-02S, SMC', category: 'Common', unit: 'Piece', qty: 5, reorder: 10, cost: 9.75, supplier: 'SMC Automation', location: 'R25-04-4A' },
+  { sku: 'MP020-00329', name: 'Fittings, Tee, Mdl: KQ2T06-00A', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'SMC Automation', location: 'R25-04-4B' },
+  { sku: 'MP020-00330', name: 'Fittings, Tee, Mdl: KQ2T10-00A', category: 'Common', unit: 'Piece', qty: 3, reorder: 10, cost: 3.5, supplier: 'SMC Automation', location: 'R25-04-4C' },
+  { sku: 'MP020-00331', name: 'Fittings, Tee, Mdl: KQ2T12-00A', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 4.75, supplier: 'SMC Automation', location: 'R25-04-4D' },
+  { sku: 'MP020-00332', name: 'Fittings, Straight, Model: PC4-01', category: 'Common', unit: 'Piece', qty: 15, reorder: 5, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-05-01' },
+  { sku: 'MP020-00333', name: 'Fittings, Straight PC 4 02', category: 'Common', unit: 'Piece', qty: 11, reorder: 5, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-05-02' },
+  { sku: 'MP020-00334', name: 'Fittings, Straight, Model: PC6-01', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-05-03' },
+  { sku: 'MP020-00335', name: 'Fittings, Straight, Model: PC6-02', category: 'Common', unit: 'Piece', qty: 17, reorder: 5, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-05-04' },
+  { sku: 'MP020-00336', name: 'Fittings, Straight PC 6 03', category: 'Common', unit: 'Piece', qty: 4, reorder: 10, cost: 11.0, supplier: 'Pneumatic Direct', location: 'R25-05-05' },
+  { sku: 'MP020-00338', name: 'Fittings, Straight, Model: PC8-02', category: 'Common', unit: 'Piece', qty: 4, reorder: 10, cost: 3.5, supplier: 'Pneumatic Direct', location: 'R25-05-07' },
+  { sku: 'MP020-00339', name: 'Fittings, Straight, Model: PC8-03', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 4.75, supplier: 'Pneumatic Direct', location: 'R25-05-08' },
+  { sku: 'MP020-00425', name: 'Fittings, Straight, Model.: PC10-01', category: 'Common', unit: 'Piece', qty: 50, reorder: 15, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-05-09' },
+  { sku: 'MP020-00341', name: 'Fittings, Straight, Model: PC10-02', category: 'Common', unit: 'Piece', qty: 150, reorder: 45, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-05-5A' },
+  { sku: 'MP020-00342', name: 'Fittings, Straight, Model: PC10-03', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-05-5B' },
+  { sku: 'MP020-00343', name: 'Fittings, Straight, Model: PC10-04', category: 'Common', unit: 'Piece', qty: 20, reorder: 6, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-05-5C' },
+  { sku: 'MP020-00344', name: 'Fittings, Straight PC 12 02', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'Pneumatic Direct', location: 'R25-05-5D' },
+  { sku: 'MP020-00345', name: 'Fittings, Straight, Model: PC12-03', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 3.5, supplier: 'Pneumatic Direct', location: 'R25-06-01' },
+  { sku: 'MP020-00346', name: 'Fittings, Straight, Model: PC12-04', category: 'Common', unit: 'Piece', qty: 9, reorder: 14, cost: 4.75, supplier: 'Pneumatic Direct', location: 'R25-06-02' },
+  { sku: 'MP020-00347', name: 'Fittings, Straight PC 16-03', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-06-03' },
+  { sku: 'MP020-00348', name: 'Fittings, Elbow, Model: PL4-01', category: 'Common', unit: 'Piece', qty: 5, reorder: 10, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-06-04' },
+  { sku: 'MP020-00349', name: 'Fittings, Elbow PL 4 02', category: 'Common', unit: 'Piece', qty: 11, reorder: 5, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-06-05' },
+  { sku: 'MP020-00350', name: 'Fittings, Elbow, Model: PL6-01', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-06-06' },
+  { sku: 'MP020-00351', name: 'Fittings, Elbow, Model: PL6-02', category: 'Common', unit: 'Piece', qty: 5, reorder: 10, cost: 11.0, supplier: 'Pneumatic Direct', location: 'R25-06-07' },
+  { sku: 'MP020-00352', name: 'Fittings, Elbow PL 6 03', category: 'Common', unit: 'Piece', qty: 13, reorder: 5, cost: 3.5, supplier: 'Pneumatic Direct', location: 'R25-06-08' },
+  { sku: 'MP020-00353', name: 'Fittings, Elbow, Model: PL8-01', category: 'Common', unit: 'Piece', qty: 8, reorder: 13, cost: 4.75, supplier: 'Pneumatic Direct', location: 'R25-06-09' },
+  { sku: 'MP020-00354', name: 'Fittings, Elbow, Model: PL8-02', category: 'Common', unit: 'Piece', qty: 40, reorder: 12, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-06-6A' },
+  { sku: 'MP020-00355', name: 'Fittings, Elbow, Model: PL8-03', category: 'Common', unit: 'Piece', qty: 26, reorder: 7, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-06-6B' },
+  { sku: 'MP020-00356', name: 'Fittings, Elbow, Model: PL10-01', category: 'Common', unit: 'Piece', qty: 110, reorder: 33, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-06-6C' },
+  { sku: 'MP020-00357', name: 'Fittings, Elbow, Model: PL10-02', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-06-6D' },
+  { sku: 'MP020-00358', name: 'Fittings, Elbow, Model: PL10-03', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'Pneumatic Direct', location: 'R25-06-6E' },
+  { sku: 'MP020-00359', name: 'Fittings, Elbow, Model: PL10-04', category: 'Common', unit: 'Piece', qty: 20, reorder: 6, cost: 3.5, supplier: 'Pneumatic Direct', location: 'R25-06-6F' },
+  { sku: 'MP020-00360', name: 'Fittings, Elbow, Model: PL12-02', category: 'Common', unit: 'Piece', qty: 15, reorder: 5, cost: 4.75, supplier: 'Pneumatic Direct', location: 'R25-07-01' },
+  { sku: 'MP020-00361', name: 'Fittings, Elbow, Model: PL12-03', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-07-02' },
+  { sku: 'MP020-00362', name: 'Fittings, Elbow, Model: PL12-04', category: 'Common', unit: 'Piece', qty: 10, reorder: 5, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-07-03' },
+  { sku: 'MP020-00406', name: 'Fittings, ELBOW Tube, Mdl: PL6-M5', category: 'Common', unit: 'Piece', qty: 4, reorder: 10, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-07-05' },
+  { sku: 'MP020-00413', name: 'Fittings, Union Straight, Mdl: PU6', category: 'Common', unit: 'Piece', qty: 18, reorder: 5, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-07-07' },
+  { sku: 'MP020-00414', name: 'Fittings, Union Straight, Mdl: PU8', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'Pneumatic Direct', location: 'R25-07-08' },
+  { sku: 'MP020-00415', name: 'Fittings, Union Straight, Mdl: PU10', category: 'Common', unit: 'Piece', qty: 30, reorder: 9, cost: 3.5, supplier: 'Pneumatic Direct', location: 'R25-07-09' },
+  { sku: 'MP020-00416', name: 'Fittings, Union Straight, Mdl.:PU12', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 4.75, supplier: 'Pneumatic Direct', location: 'R25-07-7A' },
+  { sku: 'MP020-00417', name: 'Fittings, Union Elbow, Model:PV6T', category: 'Common', unit: 'Piece', qty: 18, reorder: 5, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-07-7C' },
+  { sku: 'MP020-00418', name: 'Fittings, Union Elbow, Model: PV8', category: 'Common', unit: 'Piece', qty: 17, reorder: 5, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-07-7D' },
+  { sku: 'MP020-00419', name: 'Fittings, Union Elbow, Model:PV10T', category: 'Common', unit: 'Piece', qty: 10, reorder: 5, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-07-7E' },
+  { sku: 'MP020-00420', name: 'Fittings, Union Elbow, Model:PV12T', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-07-7F' },
+  { sku: 'MP020-00366', name: 'Fittings, Plug Hi-Coupler Male Type', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 11.0, supplier: 'SMC Automation', location: 'R25-08-04' },
+  { sku: 'MP020-00368', name: 'Fittings, Coupler Female Coupler', category: 'Common', unit: 'Piece', qty: 8, reorder: 13, cost: 3.5, supplier: 'SMC Automation', location: 'R25-08-06' },
+  { sku: 'MP020-00426', name: 'Fittings, Straight, Model: PG6-4', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 4.75, supplier: 'Pneumatic Direct', location: 'R25-08-07' },
+  { sku: 'MP020-00427', name: 'Fittings, Straight, Model: PG8-6', category: 'Common', unit: 'Piece', qty: 9, reorder: 14, cost: 6.0, supplier: 'Pneumatic Direct', location: 'R25-08-08' },
+  { sku: 'MP020-00428', name: 'Fittings, Straight, Model: PG10-8', category: 'Common', unit: 'Piece', qty: 4, reorder: 10, cost: 7.25, supplier: 'Pneumatic Direct', location: 'R25-08-09' },
+  { sku: 'MP020-00429', name: 'Fittings, Straight, Model: PG12-10', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'Pneumatic Direct', location: 'R25-08-8A' },
+  { sku: 'MP020-00421', name: 'Fittings, Union Tee, Model: PE6', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 9.75, supplier: 'Pneumatic Direct', location: 'R25-08-8B' },
+  { sku: 'MP020-00422', name: 'Fittings, Union Tee, Model: PE8T', category: 'Common', unit: 'Piece', qty: 9, reorder: 14, cost: 11.0, supplier: 'Pneumatic Direct', location: 'R25-08-8C' },
+  { sku: 'MP020-00423', name: 'Fittings, Union Tee, Model: PE10', category: 'Common', unit: 'Piece', qty: 34, reorder: 10, cost: 3.5, supplier: 'Pneumatic Direct', location: 'R25-08-8D' },
+  { sku: 'MP008-00957', name: 'Emergency stop Mdl: XW1E-TV412Q4MR', category: 'Common', unit: 'Unit', qty: 4, reorder: 10, cost: 8.5, supplier: 'IDEC Corporation', location: 'R19-01-01' },
+  { sku: 'MP008-00616', name: 'Revolving Light, Mdl:SKH-M1JB-R, 12-24V', category: 'Common', unit: 'Unit', qty: 9, reorder: 14, cost: 25.7, supplier: 'SMC Automation', location: 'R19-01-01A' },
+  { sku: 'MP008-00596', name: 'Terminal Lug, Ring Type #12-10(Ins)', category: 'Common', unit: 'Pack', qty: 180, reorder: 54, cost: 0.6, supplier: 'SMC Automation', location: 'R19-01-01B' },
+  { sku: 'MP008-00655', name: 'LED Bulb, P/N: APX510-24O', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-01-01C' },
+  { sku: 'MP008-00113', name: 'Switch, Command Mdl. AH25-ZMYM Fuji', category: 'Common', unit: 'Unit', qty: 2, reorder: 10, cost: 25.0, supplier: 'Fuji Electric', location: 'R19-01-02' },
+  { sku: 'MP008-00115', name: 'Switch, Command Mdl: AH25-ZMGM Fuji', category: 'Common', unit: 'Unit', qty: 4, reorder: 10, cost: 27.5, supplier: 'Fuji Electric', location: 'R19-01-03' },
+  { sku: 'MP008-00114', name: 'Switch, Command Mdl. AH25-ZMRM Fuji', category: 'Common', unit: 'Unit', qty: 5, reorder: 10, cost: 30.0, supplier: 'Fuji Electric', location: 'R19-01-04' },
+  { sku: 'MP008-00116', name: 'Lamp, Pilot APS126-N-G Green IDEC', category: 'Common', unit: 'Unit', qty: 5, reorder: 10, cost: 8.5, supplier: 'IDEC Corporation', location: 'R19-01-05' },
+  { sku: 'MP008-00117', name: 'Lamp, Pilot 11 Amps 18 Volts', category: 'Common', unit: 'Unit', qty: 5, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-01-06' },
+  { sku: 'MP008-00411', name: 'Switch, Push button, AR22EOL-11E3Y', category: 'Common', unit: 'Unit', qty: 2, reorder: 10, cost: 15.0, supplier: 'Fuji Electric', location: 'R19-01-07' },
+  { sku: 'MP008-00412', name: 'Switch, Pushlock Mdl: AR22S2R-22B', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 17.5, supplier: 'Fuji Electric', location: 'R19-01-08' },
+  { sku: 'MP008-00662', name: 'Switch Push Button AR22EOL-11A3W,6V', category: 'Common', unit: 'Unit', qty: 6, reorder: 11, cost: 20.0, supplier: 'Fuji Electric', location: 'R19-01-09' },
+  { sku: 'MP008-00118', name: 'Switch, Command Mdl. AH30-FY11 Fuji', category: 'Common', unit: 'Unit', qty: 4, reorder: 10, cost: 22.5, supplier: 'Fuji Electric', location: 'R19-02-01' },
+  { sku: 'MP008-00126', name: 'Switch, Command, AR22-VOL11E3R, 24V', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 25.0, supplier: 'Fuji Electric', location: 'R19-02-02A' },
+  { sku: 'MP008-00612', name: 'Pilot Light, Model: DR22DOL-H3W', category: 'Common', unit: 'Unit', qty: 10, reorder: 5, cost: 32.1, supplier: 'Fuji Electric', location: 'R19-02-02B' },
+  { sku: 'MP008-00613', name: 'Pilot Light,', category: 'Common', unit: 'Unit', qty: 4, reorder: 10, cost: 35.3, supplier: 'SMC Automation', location: 'R19-02-02C' },
+  { sku: 'MP009-01353', name: 'Emergency  Stop Light  XN4E-TL403Q4', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 38.5, supplier: 'IDEC Corporation', location: 'R19-02-02D' },
+  { sku: 'MP008-00120', name: 'Switch, Command Mdl. AR30FOR-11R', category: 'Common', unit: 'Unit', qty: 5, reorder: 10, cost: 35.0, supplier: 'SMC Automation', location: 'R19-02-03' },
+  { sku: 'MP008-00695', name: 'Plug, Straight, P/N: GW60062', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-02-05' },
+  { sku: 'MP008-00696', name: 'Outlet, Socket, P/N: GW62536', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-02-06' },
+  { sku: 'MP008-00123', name: 'Switch, Push Button, AR22G4L-11M3G', category: 'Common', unit: 'Unit', qty: 3, reorder: 10, cost: 20.0, supplier: 'Fuji Electric', location: 'R19-02-07' },
+  { sku: 'MP008-00958', name: 'Emergency stop, Mdl: XN4E-TL412Q4MR', category: 'Common', unit: 'Unit', qty: 2, reorder: 10, cost: 8.5, supplier: 'IDEC Corporation', location: 'R19-03-01' },
+  { sku: 'MP008-00127', name: 'Switch, Command Mdl. AH30-MR01 Fuji', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 25.0, supplier: 'Fuji Electric', location: 'R19-03-02' },
+  { sku: 'MP008-00128', name: 'Switch, Push Button, AR22G4L-11M3R', category: 'Common', unit: 'Unit', qty: 7, reorder: 12, cost: 27.5, supplier: 'Fuji Electric', location: 'R19-03-03' },
+  { sku: 'MP008-00614', name: 'Pilot Light, Mdl: DR22DOL-H3R, 100V', category: 'Common', unit: 'Unit', qty: 5, reorder: 10, cost: 28.9, supplier: 'Fuji Electric', location: 'R19-03-03B' },
+  { sku: 'MP008-00615', name: 'Pilot Light, Mdl: DR22DOL-H4Y,', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 32.1, supplier: 'Fuji Electric', location: 'R19-03-03C' },
+  { sku: 'MP008-01094', name: 'Cam Switch   AK22-1M4326JA', category: 'Common', unit: 'Unit', qty: 2, reorder: 10, cost: 35.0, supplier: 'SMC Automation', location: 'R19-03-03D' },
+  { sku: 'MP007-00005', name: 'Control Unit, Mdl: AVW411-R, Ui600V', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'IDEC Corporation', location: 'R19-03-04' },
+  { sku: 'MP007-00006', name: 'Control Unit, Mdl: ABN411-R, 125VAC', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 8.5, supplier: 'IDEC Corporation', location: 'R19-03-05' },
+  { sku: 'MP008-00129', name: 'Switch, Push Button, AR30EOL-11E3R', category: 'Common', unit: 'Unit', qty: 1, reorder: 10, cost: 20.0, supplier: 'SMC Automation', location: 'R19-03-06' },
+  { sku: 'MP008-00131', name: 'Switch, Command, AR30E0L-11E3G, 24V', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 22.5, supplier: 'SMC Automation', location: 'R19-03-08' },
+  { sku: 'MP008-00134', name: 'Buzzer, Powerful, EA4011B, 100VAC', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 51.3, supplier: 'SMC Automation', location: 'R19-04-01' },
+  { sku: 'MP008-00135', name: 'Buzzer, Powerful, Model:EA4012B', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 54.5, supplier: 'SMC Automation', location: 'R19-04-02' },
+  { sku: 'MP008-00998', name: 'Valve J3573A5155', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-04-03' },
+  { sku: 'MP008-00622', name: 'Pilot Light, Model:DR30DOL-E3R, 24V', category: 'Common', unit: 'Unit', qty: 6, reorder: 11, cost: 25.7, supplier: 'Fuji Electric', location: 'R19-04-04B' },
+  { sku: 'MP008-00620', name: 'Switch, Push Button', category: 'Common', unit: 'Unit', qty: 1, reorder: 10, cost: 35.0, supplier: 'SMC Automation', location: 'R19-04-04C' },
+  { sku: 'MP009-01332', name: 'Electropneumatic  Pushbutton', category: 'Common', unit: 'Unit', qty: 1, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-04-04D' },
+  { sku: 'MP009-00020', name: 'Relay Socket Mdl. PF113A Omron', category: 'Common', unit: 'Piece', qty: 10, reorder: 5, cost: 35.3, supplier: 'Omron Corp', location: 'R19-04-07' },
+  { sku: 'MP009-00021', name: 'Relay Miniature HH52PU CR 1E', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 38.5, supplier: 'Pneumatic Direct', location: 'R19-04-08' },
+  { sku: 'MP009-00022', name: 'Relay Miniature HH52PU-L100 110Volt', category: 'Common', unit: 'Piece', qty: 5, reorder: 10, cost: 41.7, supplier: 'Pneumatic Direct', location: 'R19-04-09' },
+  { sku: 'MP009-00025', name: 'Relay Miniature Type LY2 12VDC Type', category: 'Common', unit: 'Piece', qty: 6, reorder: 11, cost: 44.9, supplier: 'Omron Corp', location: 'R19-05-02' },
+  { sku: 'MP009-00026', name: 'Relay Miniature Type: MY4 100110VAC', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 48.1, supplier: 'Omron Corp', location: 'R19-05-03' },
+  { sku: 'MP009-00028', name: 'Relay Control MY4N-D2-DC12V', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 51.3, supplier: 'Omron Corp', location: 'R19-05-05' },
+  { sku: 'MP008-00623', name: 'Pilot Light, Mdl: DR30DOL-E3G,', category: 'Common', unit: 'Unit', qty: 2, reorder: 10, cost: 54.5, supplier: 'Fuji Electric', location: 'R19-05-05B' },
+  { sku: 'MP008-00621', name: 'Switch, Push Button', category: 'Common', unit: 'Unit', qty: 4, reorder: 10, cost: 35.0, supplier: 'SMC Automation', location: 'R19-05-05C' },
+  { sku: 'MP009-00029', name: 'Relay, Miniature, Type:LY4NJ 220VAC', category: 'Common', unit: 'Piece', qty: 0, reorder: 10, cost: 25.7, supplier: 'SMC Automation', location: 'R19-05-06' },
+  { sku: 'MP009-00030', name: 'Relay Controlly4N 100110 Volts', category: 'Common', unit: 'Piece', qty: 9, reorder: 14, cost: 28.9, supplier: 'SMC Automation', location: 'R19-05-07' },
+  { sku: 'MP009-00031', name: 'Relay Miniature MK2P-2 12VDC', category: 'Common', unit: 'Piece', qty: 9, reorder: 14, cost: 32.1, supplier: 'Omron Corp', location: 'R19-05-08' },
+  { sku: 'MP009-00032', name: 'Relay Miniature MK3P 24VDC', category: 'Common', unit: 'Piece', qty: 1, reorder: 10, cost: 35.3, supplier: 'Omron Corp', location: 'R19-05-09' },
+  { sku: 'MP008-00608', name: 'Pilot Light, Mdl: DR22DOL-M3W, 220V', category: 'Common', unit: 'Unit', qty: 3, reorder: 10, cost: 38.5, supplier: 'Fuji Electric', location: 'R19-06-01' },
+  { sku: 'MP008-00608', name: 'Pilot Light, Mdl: DR22DOL-M3R, 220V', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 41.7, supplier: 'Fuji Electric', location: 'R19-06-04' },
+  { sku: 'MP008-00611', name: 'Pilot Light, Mdl: DR22DOL-M3Y, 220V', category: 'Common', unit: 'Unit', qty: 8, reorder: 13, cost: 44.9, supplier: 'Fuji Electric', location: 'R19-06-05' },
+  { sku: 'MP008-00144', name: 'Conduit Fm7 Body Lb17', category: 'Common', unit: 'Piece', qty: 2, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-06-06A' },
+  { sku: 'MP008-00624', name: 'Pilot Light, Mdl: DR30DOL-E4W,', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 51.3, supplier: 'Fuji Electric', location: 'R19-06-06B' },
+  { sku: 'MP008-00625', name: 'Pilot Light, Mdl: DR30DOL-E3Y,', category: 'Common', unit: 'Unit', qty: 5, reorder: 10, cost: 54.5, supplier: 'Fuji Electric', location: 'R19-06-06C' },
+  { sku: 'MP008-00141', name: 'Terminal Lug, Ring Type, #16-14', category: 'Common', unit: 'Pack', qty: 1058, reorder: 317, cost: 1.05, supplier: 'SMC Automation', location: 'R19-06-07' },
+  { sku: 'MP008-00142', name: 'Terminal Lug, Ring Type, #12-10', category: 'Common', unit: 'Pack', qty: 120, reorder: 36, cost: 0.45, supplier: 'SMC Automation', location: 'R19-06-08' },
+  { sku: 'MP008-00143', name: 'Terminal Lug, Spade Type, #12-10', category: 'Common', unit: 'Pack', qty: 30, reorder: 9, cost: 0.6, supplier: 'SMC Automation', location: 'R19-06-09' },
+  { sku: 'MP020-00652', name: 'Pushbutton  VM0130-01-30B-X246', category: 'Common', unit: 'Unit', qty: 0, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-07-07B' },
+  { sku: 'MP008-00694', name: 'Flash Elev, LED type Volt:10-100VDC', category: 'Common', unit: 'Piece', qty: 3, reorder: 10, cost: 8.5, supplier: 'SMC Automation', location: 'R19-07-08' },
+];
+
+export const seedInventory: InventoryItem[] = specs.map((s, idx) => ({
+  id: `inv-${idx + 1}`,
+  sku: s.sku,
+  name: s.name,
+  category: s.category,
+  unit: s.unit,
+  quantity: s.qty,
+  reorderPoint: s.reorder,
+  unitCost: s.cost,
+  barcodeString: generateBarcodeString(s.sku),
+  supplier: s.supplier,
+  location: s.location,
+  createdAt: now - (idx * 2) * day,
+}));
+
+const customers = seedUsers.filter(u => u.role === 'customer');
+const warehouse = seedUsers.find(u => u.role === 'warehouse')!;
+
+const pastRequisitions: Requisition[] = [
+  {
+    id: 'req-1001',
+    requestorName: customers[0].name,
+    requestorEmail: customers[0].email,
+    purpose: 'Project kickoff supplies',
+    deptCode: 'PA-001',
+    requiredDate: new Date(now - 9 * day).toISOString().slice(0, 10),
+    items: [
+      { itemId: seedInventory[0].id, sku: seedInventory[0].sku, itemName: seedInventory[0].name, qty: 12, unitCost: seedInventory[0].unitCost },
+      { itemId: seedInventory[2].id, sku: seedInventory[2].sku, itemName: seedInventory[2].name, qty: 8, unitCost: seedInventory[2].unitCost },
+    ],
+    status: 'Fulfilled',
+    submittedAt: now - 10 * day,
+    submittedBy: customers[0].id,
+    processedBy: warehouse.name,
+    processedAt: now - 9 * day,
+    shiftId: 'Shift A',
+  },
+  {
+    id: 'req-1002',
+    requestorName: customers[1].name,
+    requestorEmail: customers[1].email,
+    purpose: 'Engineering lab restock',
+    deptCode: 'ENG-020',
+    requiredDate: new Date(now - 6 * day).toISOString().slice(0, 10),
+    items: [
+      { itemId: seedInventory[9].id, sku: seedInventory[9].sku, itemName: seedInventory[9].name, qty: 10, unitCost: seedInventory[9].unitCost },
+      { itemId: seedInventory[13].id, sku: seedInventory[13].sku, itemName: seedInventory[13].name, qty: 50, unitCost: seedInventory[13].unitCost },
+      { itemId: seedInventory[16].id, sku: seedInventory[16].sku, itemName: seedInventory[16].name, qty: 3, unitCost: seedInventory[16].unitCost },
+    ],
+    status: 'Fulfilled',
+    submittedAt: now - 7 * day,
+    submittedBy: customers[1].id,
+    processedBy: warehouse.name,
+    processedAt: now - 6 * day,
+    shiftId: 'Shift B',
+  },
+  {
+    id: 'req-1003',
+    requestorName: customers[2].name,
+    requestorEmail: customers[2].email,
+    purpose: 'Facilities monthly maintenance',
+    deptCode: 'FAC-100',
+    requiredDate: new Date(now - 3 * day).toISOString().slice(0, 10),
+    items: [
+      { itemId: seedInventory[36].id, sku: seedInventory[36].sku, itemName: seedInventory[36].name, qty: 20, unitCost: seedInventory[36].unitCost },
+      { itemId: seedInventory[37].id, sku: seedInventory[37].sku, itemName: seedInventory[37].name, qty: 6, unitCost: seedInventory[37].unitCost },
+      { itemId: seedInventory[40].id, sku: seedInventory[40].sku, itemName: seedInventory[40].name, qty: 8, unitCost: seedInventory[40].unitCost },
+      { itemId: seedInventory[43].id, sku: seedInventory[43].sku, itemName: seedInventory[43].name, qty: 15, unitCost: seedInventory[43].unitCost },
+    ],
+    status: 'Fulfilled',
+    submittedAt: now - 4 * day,
+    submittedBy: customers[2].id,
+    processedBy: warehouse.name,
+    processedAt: now - 3 * day,
+    shiftId: 'Shift A',
+  },
+  {
+    id: 'req-1004',
+    requestorName: customers[0].name,
+    requestorEmail: customers[0].email,
+    purpose: 'Site mobilization PPE',
+    deptCode: 'PA-007',
+    requiredDate: new Date(now + 2 * day).toISOString().slice(0, 10),
+    items: [
+      { itemId: seedInventory[24].id, sku: seedInventory[24].sku, itemName: seedInventory[24].name, qty: 15, unitCost: seedInventory[24].unitCost },
+      { itemId: seedInventory[25].id, sku: seedInventory[25].sku, itemName: seedInventory[25].name, qty: 20, unitCost: seedInventory[25].unitCost },
+      { itemId: seedInventory[27].id, sku: seedInventory[27].sku, itemName: seedInventory[27].name, qty: 2, unitCost: seedInventory[27].unitCost },
+      { itemId: seedInventory[28].id, sku: seedInventory[28].sku, itemName: seedInventory[28].name, qty: 10, unitCost: seedInventory[28].unitCost },
+    ],
+    status: 'Approved',
+    submittedAt: now - 1 * day,
+    submittedBy: customers[0].id,
+    processedBy: warehouse.name,
+    processedAt: now - 0.5 * day,
+    shiftId: 'Shift A',
+  },
+  {
+    id: 'req-1005',
+    requestorName: customers[1].name,
+    requestorEmail: customers[1].email,
+    purpose: 'New employee onboarding kit',
+    deptCode: 'ENG-033',
+    requiredDate: new Date(now + 1 * day).toISOString().slice(0, 10),
+    items: [
+      { itemId: seedInventory[11].id, sku: seedInventory[11].sku, itemName: seedInventory[11].name, qty: 1, unitCost: seedInventory[11].unitCost },
+      { itemId: seedInventory[3].id, sku: seedInventory[3].sku, itemName: seedInventory[3].name, qty: 1, unitCost: seedInventory[3].unitCost },
+    ],
+    status: 'Pending',
+    submittedAt: now - 0.3 * day,
+    submittedBy: customers[1].id,
+    shiftId: 'Shift B',
+  },
+];
+
+export const seedRequisitions: Requisition[] = pastRequisitions;
+
+const months = lastNMonths(6);
+function randomTsForMonth(monthIdx: number) {
+  const m = months[monthIdx];
+  return m.start + Math.floor(Math.random() * (m.end - m.start));
+}
+
+const shiftRotation: ShiftId[] = ['Shift A', 'Shift B'];
+
+const historicalIssuanceSeed: { reqIdx: number }[] = [
+  { reqIdx: 0 }, { reqIdx: 1 }, { reqIdx: 2 },
+];
+
+const pastIssuanceLogs: IssuanceLog[] = [];
+let logCounter = 1;
+historicalIssuanceSeed.forEach(({ reqIdx }) => {
+  const req = pastRequisitions[reqIdx];
+  req.items.forEach(ri => {
+    const inv = seedInventory.find(i => i.id === ri.itemId);
+    const monthIdx = reqIdx === 0 ? randomBetween(1, 2) : reqIdx === 1 ? randomBetween(2, 3) : randomBetween(3, 4);
+    const ts = req.processedAt ?? randomTsForMonth(monthIdx);
+    const stockAfter = inv ? Math.max(0, inv.quantity + ri.qty - Math.floor(Math.random() * 10)) : 0;
+    pastIssuanceLogs.push({
+      id: `log-${String(logCounter++).padStart(5, '0')}`,
+      timestamp: ts,
+      requisitionId: req.id,
+      itemId: ri.itemId,
+      itemName: ri.itemName,
+      sku: ri.sku,
+      qtyIssued: ri.qty,
+      unitCost: ri.unitCost,
+      requestorName: req.requestorName,
+      issuingStaff: warehouse.name,
+      issuingStaffRole: 'warehouse',
+      shiftId: req.shiftId ?? shiftRotation[randomBetween(0, 1)],
+      purpose: req.purpose,
+      updatedStockLevel: stockAfter,
+    });
+  });
+});
+
+const seededMonthsIssuanceExtra: { monthIdx: number; itemIdx: number; qty: number; customer: User }[] = [
+  { monthIdx: 0, itemIdx: 0, qty: 10, customer: customers[2] },
+  { monthIdx: 0, itemIdx: 18, qty: 25, customer: customers[0] },
+  { monthIdx: 0, itemIdx: 23, qty: 60, customer: customers[2] },
+  { monthIdx: 0, itemIdx: 42, qty: 4, customer: customers[2] },
+  { monthIdx: 1, itemIdx: 9, qty: 14, customer: customers[1] },
+  { monthIdx: 1, itemIdx: 10, qty: 8, customer: customers[0] },
+  { monthIdx: 1, itemIdx: 19, qty: 40, customer: customers[2] },
+  { monthIdx: 1, itemIdx: 30, qty: 10, customer: customers[0] },
+  { monthIdx: 2, itemIdx: 1, qty: 6, customer: customers[1] },
+  { monthIdx: 2, itemIdx: 14, qty: 18, customer: customers[1] },
+  { monthIdx: 2, itemIdx: 21, qty: 50, customer: customers[0] },
+  { monthIdx: 2, itemIdx: 36, qty: 10, customer: customers[2] },
+  { monthIdx: 3, itemIdx: 20, qty: 28, customer: customers[0] },
+  { monthIdx: 3, itemIdx: 31, qty: 6, customer: customers[1] },
+  { monthIdx: 3, itemIdx: 43, qty: 12, customer: customers[2] },
+  { monthIdx: 4, itemIdx: 0, qty: 15, customer: customers[1] },
+  { monthIdx: 4, itemIdx: 12, qty: 3, customer: customers[2] },
+  { monthIdx: 4, itemIdx: 22, qty: 30, customer: customers[0] },
+  { monthIdx: 5, itemIdx: 9, qty: 20, customer: customers[2] },
+  { monthIdx: 5, itemIdx: 37, qty: 8, customer: customers[1] },
+  { monthIdx: 5, itemIdx: 24, qty: 18, customer: customers[0] },
+];
+
+seededMonthsIssuanceExtra.forEach(extra => {
+  const inv = seedInventory[extra.itemIdx];
+  const ts = randomTsForMonth(extra.monthIdx);
+  const shift = shiftRotation[randomBetween(0, 1)];
+  pastIssuanceLogs.push({
+    id: `log-${String(logCounter++).padStart(5, '0')}`,
+    timestamp: ts,
+    itemId: inv.id,
+    itemName: inv.name,
+    sku: inv.sku,
+    qtyIssued: extra.qty,
+    unitCost: inv.unitCost,
+    requestorName: extra.customer.name,
+    issuingStaff: warehouse.name,
+    issuingStaffRole: 'warehouse',
+    shiftId: shift,
+    purpose: 'Recurring scheduled restock',
+    updatedStockLevel: Math.max(0, inv.quantity + extra.qty - 5),
+  });
+});
+
+pastIssuanceLogs.sort((a, b) => a.timestamp - b.timestamp);
+
+export const seedIssuanceLogs: IssuanceLog[] = pastIssuanceLogs;
+
+export const seedEmailLogs: EmailLog[] = [
+  {
+    id: 'em-1001',
+    timestamp: now - 10 * day + 60_000,
+    from: customers[0].name,
+    fromRole: 'customer',
+    to: 'Warehouse Team',
+    toRole: 'warehouse',
+    subject: 'New Requisition #1001 - Pending Review',
+    body: 'Requestor Elena Santos submitted requisition for 2 items, purpose: Project kickoff supplies.',
+    eventType: 'RequisitionSubmitted',
+    read: true,
+  },
+  {
+    id: 'em-1002',
+    timestamp: now - 9.9 * day,
+    from: 'Warehouse Team',
+    fromRole: 'warehouse',
+    to: customers[0].name,
+    toRole: 'customer',
+    subject: 'Requisition #1001 - Fulfilled & Issued',
+    body: 'Items (2) have been issued. Issuance reference: req-1001.',
+    eventType: 'RequisitionFulfilled',
+    read: true,
+  },
+  {
+    id: 'em-1003',
+    timestamp: now - 7 * day,
+    from: customers[1].name,
+    fromRole: 'customer',
+    to: 'Warehouse Team',
+    toRole: 'warehouse',
+    subject: 'New Requisition #1002 - Pending Review',
+    body: 'Requestor David Chen submitted requisition for 3 items, purpose: Engineering lab restock.',
+    eventType: 'RequisitionSubmitted',
+    read: true,
+  },
+  {
+    id: 'em-1004',
+    timestamp: now - 6 * day,
+    from: 'Warehouse Team',
+    fromRole: 'warehouse',
+    to: customers[1].name,
+    toRole: 'customer',
+    subject: 'Requisition #1002 - Fulfilled & Issued',
+    body: 'Items (3) have been issued. Issuance reference: req-1002.',
+    eventType: 'RequisitionFulfilled',
+    read: true,
+  },
+  {
+    id: 'em-1005',
+    timestamp: now - 4 * day,
+    from: customers[2].name,
+    fromRole: 'customer',
+    to: 'Warehouse Team',
+    toRole: 'warehouse',
+    subject: 'New Requisition #1003 - Pending Review',
+    body: 'Requestor Priya Patel submitted requisition for 4 items, purpose: Facilities monthly maintenance.',
+    eventType: 'RequisitionSubmitted',
+    read: true,
+  },
+  {
+    id: 'em-1006',
+    timestamp: now - 3 * day,
+    from: 'Warehouse Team',
+    fromRole: 'warehouse',
+    to: customers[2].name,
+    toRole: 'customer',
+    subject: 'Requisition #1003 - Fulfilled & Issued',
+    body: 'Items (4) have been issued. Issuance reference: req-1003.',
+    eventType: 'RequisitionFulfilled',
+    read: true,
+  },
+  {
+    id: 'em-1007',
+    timestamp: now - 1 * day,
+    from: customers[0].name,
+    fromRole: 'customer',
+    to: 'Warehouse Team',
+    toRole: 'warehouse',
+    subject: 'New Requisition #1004 - Pending Review',
+    body: 'Requestor Elena Santos submitted requisition for 4 items, purpose: Site mobilization PPE.',
+    eventType: 'RequisitionSubmitted',
+    read: true,
+  },
+  {
+    id: 'em-1008',
+    timestamp: now - 0.5 * day,
+    from: 'Warehouse Team',
+    fromRole: 'warehouse',
+    to: customers[0].name,
+    toRole: 'customer',
+    subject: 'Requisition #1004 - Approved',
+    body: 'Your requisition has been approved. Awaiting fulfillment.',
+    eventType: 'RequisitionApproved',
+    read: true,
+  },
+  {
+    id: 'em-1009',
+    timestamp: now - 0.3 * day,
+    from: customers[1].name,
+    fromRole: 'customer',
+    to: 'Warehouse Team',
+    toRole: 'warehouse',
+    subject: 'New Requisition #1005 - Pending Review',
+    body: 'Requestor David Chen submitted requisition for 2 items, purpose: New employee onboarding kit.',
+    eventType: 'RequisitionSubmitted',
+    read: false,
+  },
+];
+
+export { startOfDay, startOfWeek, startOfMonth, startOfYear };
