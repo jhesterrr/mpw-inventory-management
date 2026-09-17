@@ -285,8 +285,8 @@ function VisualShowcasePanel({ isDark, mode }: { isDark: boolean; mode: AuthMode
 }
 
 export default function LoginPage() {
-  const { loginAsRole, addUser, theme } = useAppStore(s => ({
-    loginAsRole: s.loginAsRole,
+  const { loginWithUser, addUser, theme } = useAppStore(s => ({
+    loginWithUser: s.loginWithUser,
     addUser: s.addUser,
     theme: s.theme,
   }));
@@ -307,7 +307,7 @@ export default function LoginPage() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupMobile, setSignupMobile] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
-  const signupRole: UserRole = 'customer'; // role fixed for signup
+  const [signupRole, setSignupRole] = useState<UserRole>('customer');
 
   const [signupDept, setSignupDept] = useState('');
   const [showSignupPass, setShowSignupPass] = useState(false);
@@ -322,23 +322,40 @@ export default function LoginPage() {
       setLoginError('Please enter your email address.');
       return;
     }
+    if (!loginPassword) {
+      setLoginError('Please enter your password.');
+      return;
+    }
 
     setIsSubmitting(true);
     setTimeout(() => {
       const users = useAppStore.getState().users;
-      const found = users.find(u => u.email.toLowerCase() === loginEmail.trim().toLowerCase());
+      const found = users.find(
+        u => u.email.toLowerCase() === loginEmail.trim().toLowerCase()
+      );
 
-      if (found) {
-        if (loginPassword && found.password && loginPassword !== found.password) {
-          setLoginError('Invalid password. Demo default is "mpw@123".');
-          setIsSubmitting(false);
-          return;
-        }
-        loginAsRole(found.role);
-      } else {
-        // Fallback for seamless demo experience
-        loginAsRole('editor');
+      if (!found) {
+        setLoginError('No account found with this email. Please check your credentials or sign up.');
+        setIsSubmitting(false);
+        return;
       }
+
+      // Check password (matching against user's password or default demo password 'mpw@123')
+      const expectedPassword = found.password || 'mpw@123';
+      if (loginPassword !== expectedPassword) {
+        setLoginError('Incorrect password. For demo accounts, the default password is "mpw@123".');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!found.active) {
+        setLoginError('This account has been deactivated. Please contact an administrator.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Log in as the exact user account matching the credentials
+      loginWithUser(found);
       setIsSubmitting(false);
     }, 350);
   };
@@ -352,7 +369,7 @@ export default function LoginPage() {
       return;
     }
     if (!signupEmail.trim() || !signupEmail.includes('@')) {
-      setSignupError('Please enter a valid work email address.');
+      setSignupError('Please enter a valid email address.');
       return;
     }
     if (!signupPassword || signupPassword.length < 4) {
@@ -360,19 +377,27 @@ export default function LoginPage() {
       return;
     }
 
+    // Check if email already exists
+    const users = useAppStore.getState().users;
+    if (users.some(u => u.email.toLowerCase() === signupEmail.trim().toLowerCase())) {
+      setSignupError('An account with this email already exists. Please log in instead.');
+      return;
+    }
+
     setIsSubmitting(true);
     setTimeout(() => {
-      addUser({
+      const newUser = addUser({
         name: signupName.trim(),
         email: signupEmail.trim(),
         role: signupRole,
-        dept: signupDept.trim() || 'General Operations',
+        dept: signupDept.trim() || (signupRole === 'warehouse' ? 'Warehouse Operations' : 'General Operations'),
         password: signupPassword,
       });
 
       setSignupSuccess(true);
       setTimeout(() => {
-        loginAsRole(signupRole);
+        // Log in directly as the newly created user
+        loginWithUser(newUser);
       }, 600);
     }, 400);
   };
@@ -675,6 +700,37 @@ export default function LoginPage() {
                 />
               </div>
 
+              {/* Account Role Selector */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+                  Account Role
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'customer' as UserRole, label: 'Customer', desc: 'Orders & Reqs' },
+                    { id: 'warehouse' as UserRole, label: 'Warehouse', desc: 'Stock & Issues' },
+                    { id: 'editor' as UserRole, label: 'Admin', desc: 'Full System' },
+                  ].map(r => {
+                    const active = signupRole === r.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSignupRole(r.id)}
+                        className={cn(
+                          'p-2.5 rounded-xl border text-left transition-all duration-200 outline-none',
+                          active
+                            ? 'bg-royal-primary/10 dark:bg-royal-primary/20 border-royal-primary text-primary font-bold ring-1 ring-royal-primary/30'
+                            : 'border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20'
+                        )}
+                      >
+                        <p className="text-xs font-bold leading-tight">{r.label}</p>
+                        <p className="text-[10px] text-muted truncate mt-0.5">{r.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               {signupError && (
                 <div className="text-xs font-medium text-rose-500 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg">

@@ -48,6 +48,7 @@ interface AppActions {
   setTheme: (t: AppState['theme']) => void;
   toggleTheme: () => void;
   loginAsRole: (role: UserRole) => void;
+  loginWithUser: (user: User) => void;
   loginDefault: () => void;
   logout: () => void;
   switchRole: (role: UserRole) => void;
@@ -108,7 +109,7 @@ interface AppActions {
 
   getCustomerMyRequisitions: (customerName: string) => Requisition[];
 
-  addUser: (input: { name: string; email: string; role: UserRole; dept?: string; password?: string }) => void;
+  addUser: (input: { name: string; email: string; role: UserRole; dept?: string; password?: string }) => User;
   updateUser: (id: string, patch: Partial<Pick<User, 'role' | 'active' | 'department' | 'dept' | 'name' | 'email'>>) => void;
   deleteUser: (id: string) => void;
   resetToSeed: () => void;
@@ -130,6 +131,9 @@ export const useAppStore = create<AppState & AppActions>()(
         if (user && user.role !== role) {
           switchRole(role);
         }
+      },
+      loginWithUser: user => {
+        set({ isAuthenticated: true, currentUser: user, activePage: 'dashboard' });
       },
       loginDefault: () => get().loginAsRole('editor'),
       logout: () => set({ isAuthenticated: false, currentUser: null, cart: [], activePage: 'dashboard' }),
@@ -628,6 +632,7 @@ export const useAppStore = create<AppState & AppActions>()(
           body: `Your account (${input.role}) has been created. Department: ${input.dept || 'General'}.`,
           eventType: 'UserCreated',
         });
+        return user;
       },
 
       updateUser: (id, patch) =>
