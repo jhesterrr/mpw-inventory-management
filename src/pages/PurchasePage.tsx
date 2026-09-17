@@ -503,18 +503,18 @@ function MiniCard({
   } as const;
 
   return (
-    <div className="stat-card shadow-card p-5 group hover:border-royal-primary/30 transition-all">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted truncate">{label}</p>
-          <p className="mt-2 text-2xl md:text-3xl font-extrabold tabular-nums tracking-tight">
-            {formatter ? formatter(value) : formatNumber(value)}
-          </p>
-          {subtitle && <p className="mt-1 text-xs text-muted truncate">{subtitle}</p>}
-        </div>
-        <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border transition-transform duration-300 group-hover:scale-110 shadow-sm', map[tone])}>
+    <div className="stat-card shadow-card p-3.5 sm:p-5 group hover:border-royal-primary/30 transition-all flex flex-col justify-between min-w-0">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
+        <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-muted truncate flex-1 min-w-0">{label}</p>
+        <div className={cn('w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border transition-transform duration-300 group-hover:scale-105 shadow-sm', map[tone])}>
           {icon}
         </div>
+      </div>
+      <div className="mt-2 min-w-0">
+        <p className="text-xl sm:text-2xl md:text-3xl font-extrabold tabular-nums tracking-tight truncate">
+          {formatter ? formatter(value) : formatNumber(value)}
+        </p>
+        {subtitle && <p className="mt-1 text-[11px] sm:text-xs text-muted truncate">{subtitle}</p>}
       </div>
     </div>
   );

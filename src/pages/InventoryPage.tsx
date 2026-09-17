@@ -200,27 +200,27 @@ export default function InventoryPage() {
             </span>
           </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
           {/* View Mode Toggle */}
           <div className="flex items-center p-1 rounded-xl border surface surface-border">
             <button
               type="button"
               onClick={() => setViewMode('animated')}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all',
+                'px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap',
                 viewMode === 'animated'
                   ? 'bg-royal-primary text-white shadow-sm'
                   : 'text-muted hover:text-[var(--text)]',
               )}
               title="Animated Stream View"
             >
-              <LayoutList className="w-3.5 h-3.5" /> Animated List
+              <LayoutList className="w-3.5 h-3.5" /> <span className="hidden xs:inline sm:inline">Animated</span> List
             </button>
             <button
               type="button"
               onClick={() => setViewMode('table')}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all',
+                'px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap',
                 viewMode === 'table'
                   ? 'bg-royal-primary text-white shadow-sm'
                   : 'text-muted hover:text-[var(--text)]',
@@ -235,15 +235,20 @@ export default function InventoryPage() {
             type="button"
             onClick={() => setFiltersOpen(o => !o)}
             className={cn(
-              'h-11 px-4 rounded-xl border surface surface-border flex items-center gap-2 text-sm font-medium hover:border-royal-primary/40 transition-colors',
+              'h-11 px-3 sm:px-4 rounded-xl border surface surface-border flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium hover:border-royal-primary/40 transition-colors whitespace-nowrap',
               (category !== 'All' || filtersOpen) && 'ring-1 ring-royal-primary/30',
             )}
           >
             <Filter className="w-4 h-4" /> Filters
           </button>
           {canEdit && (
-            <button type="button" onClick={startCreate} className="btn-primary h-11">
-              <Plus className="w-4 h-4" /> New Item
+            <button
+              type="button"
+              onClick={startCreate}
+              className="btn-primary h-11 px-4 sm:px-6 whitespace-nowrap shrink-0 text-xs sm:text-sm"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>New Item</span>
             </button>
           )}
         </div>

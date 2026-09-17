@@ -67,7 +67,7 @@ export default function StatCard({
     <motion.div
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       className={cn(
-        'group relative rounded-2xl p-5 border transition-all duration-300 overflow-hidden select-none',
+        'group relative rounded-2xl p-3.5 sm:p-5 border transition-all duration-300 overflow-hidden select-none flex flex-col justify-between min-w-0',
         'bg-white dark:bg-[#18181A] shadow-sm hover:shadow-xl',
         t.border,
         t.glow,
@@ -81,43 +81,44 @@ export default function StatCard({
         )}
       />
 
-      <div className="relative z-10 flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted truncate">
-            {label}
-          </p>
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-2xl sm:text-3xl font-extrabold tracking-tight font-sans">
-              {formatted}
-            </p>
-            {trend && (
-              <span
-                className={cn(
-                  'text-[11px] font-bold px-1.5 py-0.5 rounded-md font-mono inline-flex items-center',
-                  trendPositive
-                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                    : 'text-rose-600 dark:text-rose-400 bg-rose-500/10',
-                )}
-              >
-                {trend}
-              </span>
-            )}
-          </div>
-          {subtitle && (
-            <p className="mt-1.5 text-xs text-muted truncate font-medium">
-              {subtitle}
-            </p>
-          )}
-        </div>
+      <div className="relative z-10 flex items-start justify-between gap-2 sm:gap-3">
+        <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-muted truncate flex-1 min-w-0">
+          {label}
+        </p>
 
         <div
           className={cn(
-            'shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm',
+            'shrink-0 w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-sm',
             t.iconBg,
           )}
         >
-          <Icon className="w-5 h-5" />
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
+      </div>
+
+      <div className="relative z-10 mt-2 min-w-0">
+        <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+          <p className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight font-sans truncate">
+            {formatted}
+          </p>
+          {trend && (
+            <span
+              className={cn(
+                'text-[10px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-md font-mono inline-flex items-center',
+                trendPositive
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                  : 'text-rose-600 dark:text-rose-400 bg-rose-500/10',
+              )}
+            >
+              {trend}
+            </span>
+          )}
+        </div>
+        {subtitle && (
+          <p className="mt-1 text-[11px] sm:text-xs text-muted truncate font-medium">
+            {subtitle}
+          </p>
+        )}
       </div>
     </motion.div>
   );
