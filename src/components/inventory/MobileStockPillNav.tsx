@@ -9,9 +9,11 @@ export interface MobileStockFilterOption {
   label: string;
   count: number;
   icon: React.ComponentType<{ className?: string }>;
-  accentColor: string;
-  badgeBg: string;
-  badgeText: string;
+  activeBgLight: string;
+  activeBgDark: string;
+  activeText: string;
+  borderLight: string;
+  badgeBgActive: string;
 }
 
 interface MobileStockPillNavProps {
@@ -36,62 +38,68 @@ export const MobileStockPillNav: React.FC<MobileStockPillNavProps> = ({
       label: 'All Items',
       count: counts.all,
       icon: Boxes,
-      accentColor: 'from-[#800020] via-[#A0153E] to-[#D4AF37]',
-      badgeBg: 'bg-white/20 text-white',
-      badgeText: 'text-white',
+      activeBgLight: 'bg-[#500B18]',
+      activeBgDark: 'bg-[#801B2C]',
+      activeText: 'text-[#FFFFFF]',
+      borderLight: 'border-[#500B18]',
+      badgeBgActive: 'bg-white/20 text-[#FFFFFF]',
     },
     {
       id: 'in-stock',
       label: 'In Stock',
       count: counts.inStock,
       icon: CheckCircle2,
-      accentColor: 'from-[#059669] via-[#10B981] to-[#34D399]',
-      badgeBg: 'bg-white/20 text-white',
-      badgeText: 'text-white',
+      activeBgLight: 'bg-[#065F46]',
+      activeBgDark: 'bg-[#047857]',
+      activeText: 'text-[#FFFFFF]',
+      borderLight: 'border-[#065F46]',
+      badgeBgActive: 'bg-white/20 text-[#FFFFFF]',
     },
     {
       id: 'reorder',
-      label: 'Reorder',
+      label: 'Reorder Point',
       count: counts.reorder,
       icon: AlertTriangle,
-      accentColor: 'from-[#D97706] via-[#F59E0B] to-[#FBBF24]',
-      badgeBg: 'bg-white/20 text-white',
-      badgeText: 'text-white',
+      activeBgLight: 'bg-[#B45309]',
+      activeBgDark: 'bg-[#D97706]',
+      activeText: 'text-[#FFFFFF]',
+      borderLight: 'border-[#B45309]',
+      badgeBgActive: 'bg-white/20 text-[#FFFFFF]',
     },
     {
       id: 'out-of-stock',
       label: 'Out of Stock',
       count: counts.outOfStock,
       icon: XCircle,
-      accentColor: 'from-[#E11D48] via-[#F43F5E] to-[#FB7185]',
-      badgeBg: 'bg-white/20 text-white',
-      badgeText: 'text-white',
+      activeBgLight: 'bg-[#BE123C]',
+      activeBgDark: 'bg-[#E11D48]',
+      activeText: 'text-[#FFFFFF]',
+      borderLight: 'border-[#BE123C]',
+      badgeBgActive: 'bg-white/20 text-[#FFFFFF]',
     },
   ];
 
   const activeOption = options.find(o => o.id === currentFilter) || options[0];
 
   return (
-    <div className="w-full flex flex-col gap-2.5">
-      {/* Header bar with luxury brand indicator and current status */}
+    <div className="w-full flex flex-col gap-2">
+      {/* Mini status indicator header */}
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#800020] flex items-center justify-center text-white shadow-md shadow-[#800020]/20">
-            <Sparkles className="w-3.5 h-3.5 text-[#FFF9E6]" />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#800020] flex items-center justify-center text-white shrink-0 shadow-sm">
+            <Sparkles className="w-3 h-3 text-[#FFF9E6]" />
           </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Stock Status</span>
-            <span className="text-[11px] text-muted mx-1.5">•</span>
-            <span className="text-xs font-semibold text-[var(--text)]">{activeOption.label}</span>
-          </div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
+            Category: <strong className="text-[var(--text)] normal-case font-semibold">{activeOption.label}</strong>
+          </span>
         </div>
-        <div className="text-[11px] font-medium text-muted px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 border border-white/10">
-          <span className="font-bold text-[var(--text)]">{activeOption.count}</span> total
-        </div>
+        <span className="text-[11px] font-medium text-muted shrink-0">
+          Showing <span className="font-bold text-[var(--text)]">{activeOption.count}</span>
+        </span>
       </div>
 
       {/* Horizontal pill navigation track */}
-      <div className="relative w-full overflow-x-auto no-scrollbar py-1 px-0.5 -mx-0.5">
+      <div className="relative w-full overflow-x-auto no-scrollbar py-1 px-0.5">
         <div className="flex items-center gap-2 min-w-max">
           {options.map(option => {
             const isActive = currentFilter === option.id;
@@ -102,44 +110,43 @@ export const MobileStockPillNav: React.FC<MobileStockPillNavProps> = ({
                 key={option.id}
                 type="button"
                 onClick={() => onFilterChange(option.id)}
-                className={`relative px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-300 flex items-center gap-2 select-none shrink-0 ${
+                className={`relative px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 select-none shrink-0 transition-colors duration-200 ${
                   isActive
-                    ? 'text-white shadow-lg shadow-[#800020]/15'
-                    : 'text-muted hover:text-[var(--text)] bg-[var(--surface-color,rgba(255,255,255,0.06))] hover:bg-black/5 dark:hover:bg-white/10 border border-black/5 dark:border-white/10'
+                    ? 'text-white shadow-md shadow-black/10'
+                    : 'text-[var(--text)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10'
                 }`}
               >
                 {isActive && (
                   <motion.div
-                    layoutId="mobilePillActiveGlaze"
-                    className={`absolute inset-0 rounded-full bg-gradient-to-r ${option.accentColor} -z-10 shadow-md`}
+                    layoutId="mobileActiveStockPillIndicator"
+                    className={`absolute inset-0 rounded-full ${option.activeBgLight} dark:${option.activeBgDark} shadow-sm z-0`}
                     transition={{
                       type: 'spring',
-                      stiffness: 400,
-                      damping: 32,
+                      stiffness: 450,
+                      damping: 35,
                     }}
-                  >
-                    {/* Subtle inner gloss highlight */}
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/25 via-transparent to-black/10 pointer-events-none" />
-                  </motion.div>
+                  />
                 )}
 
-                <Icon
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    isActive ? 'text-white scale-110' : 'text-muted'
-                  }`}
-                />
-
-                <span className="tracking-tight whitespace-nowrap">{option.label}</span>
-
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold min-w-[20px] text-center transition-all ${
-                    isActive
-                      ? 'bg-white/25 text-white backdrop-blur-sm'
-                      : 'bg-black/10 dark:bg-white/15 text-[var(--text)]'
-                  }`}
-                >
-                  {option.count}
-                </span>
+                <div className="relative z-10 flex items-center gap-1.5">
+                  <Icon
+                    className={`w-3.5 h-3.5 shrink-0 ${
+                      isActive ? 'text-white' : 'text-muted'
+                    }`}
+                  />
+                  <span className={`whitespace-nowrap tracking-tight font-semibold ${isActive ? 'text-white' : 'text-[var(--text)]'}`}>
+                    {option.label}
+                  </span>
+                  <span
+                    className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold min-w-[18px] text-center leading-none ${
+                      isActive
+                        ? 'bg-white/25 text-white'
+                        : 'bg-black/10 dark:bg-white/15 text-[var(--text)]'
+                    }`}
+                  >
+                    {option.count}
+                  </span>
+                </div>
               </button>
             );
           })}
