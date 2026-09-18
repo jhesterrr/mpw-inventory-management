@@ -193,19 +193,19 @@ export const useAppStore = create<AppState & AppActions>()(
             id: `u-${role}-runtime`,
             name:
               role === 'editor'
-                ? 'GilbertRed'
+                ? 'EJReyes'
                 : role === 'warehouse'
-                  ? 'YvesWhite'
+                  ? 'GilbertYves'
                   : 'ThomasCustomer',
             email:
               role === 'editor'
-                ? 'GilbertRed@mpw.com'
+                ? 'EJReyes@mpw.com'
                 : role === 'warehouse'
-                  ? 'YvesWhite@mpw.com'
+                  ? 'GilbertYves@mpw.com'
                   : 'ThomasCustomer@mpw.com',
             role,
             active: true,
-            avatarInitials: role === 'editor' ? 'GR' : role === 'warehouse' ? 'YW' : 'TC',
+            avatarInitials: role === 'editor' ? 'ER' : role === 'warehouse' ? 'GY' : 'TC',
           };
         }
         set({ currentUser: user });
@@ -747,7 +747,7 @@ export const useAppStore = create<AppState & AppActions>()(
       },
     }),
     {
-      name: 'mpw-inventory-store-v4',
+      name: 'mpw-inventory-store-v5',
       partialize: s => ({
         theme: s.theme,
         isAuthenticated: s.isAuthenticated,

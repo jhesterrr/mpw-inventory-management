@@ -112,8 +112,8 @@ CREATE POLICY "Allow public read-write for email_logs" ON public.email_logs FOR 
 -- 8. Seed / Update Demo Users Migration Query
 INSERT INTO public.profiles (id, name, email, role, department, dept, active, password, avatar_initials)
 VALUES 
-  ('u-editor-001', 'GilbertRed', 'GilbertRed@mpw.com', 'editor', 'Head Office', 'Head Office', true, 'mpw@123', 'GR'),
-  ('u-warehouse-001', 'YvesWhite', 'YvesWhite@mpw.com', 'warehouse', 'Warehouse Operations', 'Warehouse Operations', true, 'mpw@123', 'YW'),
+  ('u-editor-001', 'EJReyes', 'EJReyes@mpw.com', 'editor', 'Head Office', 'Head Office', true, 'mpw@123', 'ER'),
+  ('u-warehouse-001', 'GilbertYves', 'GilbertYves@mpw.com', 'warehouse', 'Warehouse Operations', 'Warehouse Operations', true, 'mpw@123', 'GY'),
   ('u-customer-001', 'ThomasCustomer', 'ThomasCustomer@mpw.com', 'customer', 'Project Alpha', 'Project Alpha', true, 'mpw@123', 'TC')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,

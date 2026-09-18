@@ -27,8 +27,8 @@ import AnimatedInput from '@/components/common/AnimatedInput';
 type AuthMode = 'login' | 'signup';
 
 const demoAccounts = [
-  { email: 'GilbertRed@mpw.com', password: 'mpw@123', role: 'Admin / Editor', roleTag: 'editor' as UserRole, username: 'GilbertRed' },
-  { email: 'YvesWhite@mpw.com', password: 'mpw@123', role: 'Warehouse Staff', roleTag: 'warehouse' as UserRole, username: 'YvesWhite' },
+  { email: 'EJReyes@mpw.com', password: 'mpw@123', role: 'Admin / Editor', roleTag: 'editor' as UserRole, username: 'EJReyes' },
+  { email: 'GilbertYves@mpw.com', password: 'mpw@123', role: 'Warehouse Staff', roleTag: 'warehouse' as UserRole, username: 'GilbertYves' },
   { email: 'ThomasCustomer@mpw.com', password: 'mpw@123', role: 'Customer', roleTag: 'customer' as UserRole, username: 'ThomasCustomer' },
 ];
 
