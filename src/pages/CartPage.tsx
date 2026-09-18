@@ -104,10 +104,14 @@ export default function CartPage() {
               key={line.itemId}
               className="stat-card shadow-card p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center border surface-border"
             >
-              <div className="w-12 h-12 rounded-2xl bg-royal-primary/10 dark:bg-white/10 flex items-center justify-center shrink-0 border surface-border">
-                <span className="font-extrabold text-sm text-primary dark:text-[#E8D499]">
-                  {idx + 1}
-                </span>
+              <div className="w-14 h-14 rounded-2xl bg-royal-primary/10 dark:bg-white/10 flex items-center justify-center shrink-0 border surface-border overflow-hidden">
+                {line.imageUrl ? (
+                  <img src={line.imageUrl} alt={line.itemName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-extrabold text-sm text-primary dark:text-[#E8D499]">
+                    {idx + 1}
+                  </span>
+                )}
               </div>
 
               <div className="flex-1 min-w-0">

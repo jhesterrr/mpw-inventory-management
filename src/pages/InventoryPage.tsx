@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Image as ImageIcon,
+  Upload,
 } from 'lucide-react';
 import StatusBadge from '@/components/common/StatusBadge';
 import BarcodeDisplay from '@/components/common/BarcodeDisplay';
@@ -51,6 +53,7 @@ const emptyItem: Omit<InventoryItem, 'id' | 'barcodeString' | 'createdAt'> = {
   unitCost: 0,
   supplier: '',
   location: '',
+  imageUrl: '',
 };
 
 export default function InventoryPage() {
@@ -147,6 +150,7 @@ export default function InventoryPage() {
       unitCost: it.unitCost,
       supplier: it.supplier,
       location: it.location,
+      imageUrl: it.imageUrl || '',
     });
   };
   const saveForm = () => {
@@ -441,9 +445,17 @@ export default function InventoryPage() {
                     )}
                   >
                     <div className="flex items-start md:items-center gap-3 min-w-0 flex-1">
-                      <div className="hidden sm:block shrink-0">
-                        <BarcodeDisplay code={it.barcodeString} height={28} showText={false} />
-                      </div>
+                      {it.imageUrl ? (
+                        <img
+                          src={it.imageUrl}
+                          alt={it.name}
+                          className="w-12 h-12 rounded-xl object-cover border surface-border shrink-0 bg-black/5 dark:bg-white/5"
+                        />
+                      ) : (
+                        <div className="hidden sm:block shrink-0">
+                          <BarcodeDisplay code={it.barcodeString} height={28} showText={false} />
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-base truncate">{it.name}</span>
@@ -588,7 +600,15 @@ export default function InventoryPage() {
                         isHi && 'ring-2 ring-inset ring-royal-gold animate-pulse-highlight bg-royal-gold/5 dark:bg-royal-gold/10',
                       )}
                     >
-                      <td className="px-5 py-3.5"><BarcodeDisplay code={it.barcodeString} height={28} /></td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          {it.imageUrl ? (
+                            <img src={it.imageUrl} alt={it.name} className="w-8 h-8 rounded-lg object-cover border surface-border shrink-0" />
+                          ) : (
+                            <BarcodeDisplay code={it.barcodeString} height={26} showText={false} />
+                          )}
+                        </div>
+                      </td>
                       <td className="px-3 py-3.5 font-mono text-xs text-muted">{it.sku}</td>
                       <td className="px-3 py-3.5 font-semibold">{it.name}</td>
                       <td className="px-3 py-3.5 text-muted">{it.category}</td>
@@ -796,8 +816,12 @@ export default function InventoryPage() {
         {selected && (
           <div className="space-y-5">
             <div className="flex items-start gap-4">
-              <div className="shrink-0 w-20 h-20 rounded-2xl bg-royal-primary/10 dark:bg-crimson-primary/20 flex items-center justify-center">
-                <BarcodeDisplay code={selected.barcodeString} height={44} showText={false} />
+              <div className="shrink-0 w-24 h-24 rounded-2xl bg-royal-primary/10 dark:bg-crimson-primary/20 flex items-center justify-center overflow-hidden border surface-border">
+                {selected.imageUrl ? (
+                  <img src={selected.imageUrl} alt={selected.name} className="w-full h-full object-cover" />
+                ) : (
+                  <BarcodeDisplay code={selected.barcodeString} height={44} showText={false} />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
@@ -907,6 +931,74 @@ export default function InventoryPage() {
           <Field label="Warehouse Location">
             <input className="input" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="e.g. Shelf A-12" />
           </Field>
+
+          {/* Item Image Upload & URL input section */}
+          <div className="sm:col-span-2 p-4 rounded-xl border surface-border bg-black/[0.02] dark:bg-white/[0.02] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-royal-primary dark:text-royal-gold" /> Item Product Image
+              </span>
+              {form.imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, imageUrl: '' })}
+                  className="text-xs text-rose-500 hover:underline font-semibold"
+                >
+                  Remove Image
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+              {/* Image Preview Box */}
+              <div className="w-full h-28 rounded-xl border surface-border bg-white dark:bg-black/40 flex items-center justify-center overflow-hidden relative group">
+                {form.imageUrl ? (
+                  <img src={form.imageUrl} alt="Preview" className="w-full h-full object-contain p-1" />
+                ) : (
+                  <div className="text-center p-2 text-muted">
+                    <ImageIcon className="w-8 h-8 mx-auto opacity-30" />
+                    <span className="text-[11px] block mt-1">No Image</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload & URL Inputs */}
+              <div className="sm:col-span-2 space-y-2">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted block mb-1">Image URL</label>
+                  <input
+                    type="url"
+                    className="input text-xs"
+                    value={form.imageUrl}
+                    onChange={e => setForm({ ...form, imageUrl: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted block mb-1">Or Upload Image File</label>
+                  <label className="flex items-center justify-center gap-2 h-10 px-3 rounded-xl border surface-border border-dashed bg-white dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors text-xs font-semibold">
+                    <Upload className="w-3.5 h-3.5 text-royal-primary dark:text-royal-gold" />
+                    <span>Choose File...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setForm(f => ({ ...f, imageUrl: reader.result as string }));
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </Modal>
 

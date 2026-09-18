@@ -26,9 +26,9 @@ import AnimatedInput from '@/components/common/AnimatedInput';
 type AuthMode = 'login' | 'signup';
 
 const demoAccounts = [
-  { email: 'admin@mpw.com', password: 'mpw@123', role: 'Admin / Editor', roleTag: 'editor' as UserRole },
-  { email: 'marco.reyes@mpw.com', password: 'mpw@123', role: 'Warehouse Staff', roleTag: 'warehouse' as UserRole },
-  { email: 'elena.santos@mpw.com', password: 'mpw@123', role: 'Customer', roleTag: 'customer' as UserRole },
+  { email: 'GilbertRed@mpw.com', password: 'mpw@123', role: 'Admin / Editor', roleTag: 'editor' as UserRole, username: 'GilbertRed' },
+  { email: 'YvesWhite@mpw.com', password: 'mpw@123', role: 'Warehouse Staff', roleTag: 'warehouse' as UserRole, username: 'YvesWhite' },
+  { email: 'ThomasCustomer@mpw.com', password: 'mpw@123', role: 'Customer', roleTag: 'customer' as UserRole, username: 'ThomasCustomer' },
 ];
 
 /**
@@ -510,10 +510,10 @@ export default function LoginPage() {
                     )}
                   >
                     <span className="text-[10px] font-black uppercase text-[#500B18] dark:text-[#E8D499]">
-                      {acc.role.split('/')[0]}
+                      {acc.role.split('/')[0]} ({acc.username})
                     </span>
                     <span className="text-[11px] truncate w-full text-gray-700 dark:text-gray-300 font-mono mt-0.5">
-                      {acc.email.split('@')[0]}
+                      {acc.email}
                     </span>
                   </button>
                 ))}

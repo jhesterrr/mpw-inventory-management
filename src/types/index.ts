@@ -33,6 +33,7 @@ export interface InventoryItem {
   supplier: string;
   location: string;
   createdAt: number;
+  imageUrl?: string;
 }
 
 export interface RequisitionItem {
@@ -41,6 +42,7 @@ export interface RequisitionItem {
   itemName: string;
   qty: number;
   unitCost: number;
+  imageUrl?: string;
 }
 
 export type RequisitionStatus = 'Pending' | 'Approved' | 'Fulfilled' | 'Rejected';
