@@ -34,6 +34,7 @@ export interface InventoryItem {
   location: string;
   createdAt: number;
   imageUrl?: string;
+  description?: string;
 }
 
 export interface RequisitionItem {

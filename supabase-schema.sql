@@ -36,11 +36,13 @@ CREATE TABLE IF NOT EXISTS public.inventory_items (
   supplier TEXT,
   location TEXT,
   created_at BIGINT NOT NULL,
-  image_url TEXT
+  image_url TEXT,
+  description TEXT
 );
 
--- Ensure image_url column exists if table was created previously
+-- Ensure image_url and description columns exist if table was created previously
 ALTER TABLE public.inventory_items ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.inventory_items ADD COLUMN IF NOT EXISTS description TEXT;
 
 -- 4. Requisitions Table
 CREATE TABLE IF NOT EXISTS public.requisitions (

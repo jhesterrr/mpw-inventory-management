@@ -29,6 +29,7 @@ export const SupabaseService = {
       location: row.location,
       createdAt: Number(row.created_at),
       imageUrl: row.image_url || undefined,
+      description: row.description || undefined,
     }));
   },
 
@@ -51,6 +52,7 @@ export const SupabaseService = {
       location: item.location,
       created_at: item.createdAt,
       image_url: item.imageUrl || null,
+      description: item.description || null,
     });
     if (error) console.error('Supabase upsertItem error:', error);
   },

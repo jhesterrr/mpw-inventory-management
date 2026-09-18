@@ -54,6 +54,7 @@ const emptyItem: Omit<InventoryItem, 'id' | 'barcodeString' | 'createdAt'> = {
   supplier: '',
   location: '',
   imageUrl: '',
+  description: '',
 };
 
 export default function InventoryPage() {
@@ -151,6 +152,7 @@ export default function InventoryPage() {
       supplier: it.supplier,
       location: it.location,
       imageUrl: it.imageUrl || '',
+      description: it.description || '',
     });
   };
   const saveForm = () => {
@@ -858,6 +860,12 @@ export default function InventoryPage() {
                 <dd className="font-semibold mt-1">{selected.location || '—'}</dd>
               </div>
             </dl>
+            {selected.description && (
+              <div className="p-4 rounded-xl border surface-border bg-black/[0.02] dark:bg-white/[0.02]">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted mb-1">Product Description</p>
+                <p className="text-sm leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">{selected.description}</p>
+              </div>
+            )}
             <div>
               <p className="text-xs uppercase tracking-wider text-muted mb-2">Barcode</p>
               <div className="p-4 rounded-xl border surface-border flex items-center justify-center bg-white">
@@ -931,6 +939,18 @@ export default function InventoryPage() {
           <Field label="Warehouse Location">
             <input className="input" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="e.g. Shelf A-12" />
           </Field>
+
+          {/* Long Description Textarea */}
+          <div className="sm:col-span-2">
+            <Field label="Detailed Product Description">
+              <textarea
+                className="input min-h-[96px] py-2.5 resize-y"
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                placeholder="Enter detailed technical specs, model notes, usage instructions, or safety guidelines..."
+              />
+            </Field>
+          </div>
 
           {/* Item Image Upload & URL input section */}
           <div className="sm:col-span-2 p-4 rounded-xl border surface-border bg-black/[0.02] dark:bg-white/[0.02] space-y-3">
