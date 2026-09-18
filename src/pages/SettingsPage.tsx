@@ -2,12 +2,14 @@ import { useState } from 'react';
 import {
   Settings as SettingsIcon, UserPlus, UserMinus, Palette, User,
   ShieldCheck, RefreshCw, Building2, BadgeCheck, GripVertical, AlertTriangle, RotateCcw, Sparkles,
+  Database, CheckCircle2, Server, Wifi,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '@/store';
 import { useHasRole } from '@/store';
 import type { UserRole } from '@/types';
 import { cn } from '@/utils';
+import { isSupabaseConfigured, supabase } from '@/utils/supabase';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -54,6 +56,7 @@ export default function SettingsPage() {
         <ProfileCard />
 
         <div className="lg:col-span-2 space-y-5">
+          <DatabaseStatusPanel />
           <ThemePanel />
           {isWarehouse && <ShiftPanel />}
           {isEditor && <UserManagement />}
@@ -289,6 +292,97 @@ function DangerZone() {
           <RotateCcw className="w-4 h-4" /> Reset to Seed
         </button>
       </div>
+    </section>
+  );
+}
+
+function DatabaseStatusPanel() {
+  const [testing, setTesting] = useState(false);
+  const [pingResult, setPingResult] = useState<{ ok: boolean; msg: string; latency?: number } | null>(null);
+
+  const testConnection = async () => {
+    setTesting(true);
+    setPingResult(null);
+    const start = performance.now();
+    try {
+      if (!isSupabaseConfigured || !supabase) {
+        setPingResult({ ok: false, msg: 'Supabase credentials not configured in environment.' });
+        setTesting(false);
+        return;
+      }
+      const { count, error } = await supabase.from('inventory_items').select('*', { count: 'exact', head: true });
+      const duration = Math.round(performance.now() - start);
+      if (error) {
+        setPingResult({ ok: false, msg: `Supabase query error: ${error.message}` });
+      } else {
+        setPingResult({
+          ok: true,
+          msg: `Connected successfully! Found ${count ?? 0} inventory records in Supabase cloud.`,
+          latency: duration,
+        });
+      }
+    } catch (err) {
+      setPingResult({ ok: false, msg: `Connection failed: ${String(err)}` });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <section className="stat-card shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-xl bg-royal-primary/10 text-royal-primary dark:bg-crimson-primary/20 dark:text-royal-gold flex items-center justify-center shrink-0 border surface-border">
+            <Database className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-extrabold text-lg">Supabase Cloud Database</h3>
+              <span className={cn(
+                'badge-pill text-[10px] font-bold uppercase tracking-wider',
+                isSupabaseConfigured ? 'bg-status-green/15 text-status-green' : 'bg-amber-500/15 text-amber-600'
+              )}>
+                {isSupabaseConfigured ? (
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-status-green animate-pulse" /> Active</span>
+                ) : (
+                  'Local Fallback'
+                )}
+              </span>
+            </div>
+            <p className="text-xs text-muted mt-1 max-w-xl">
+              Cloud database connection status for synchronizing products, requisitions, issuance logs, and user profiles.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={testConnection}
+          disabled={testing}
+          className="btn-outline h-10 px-4 text-xs inline-flex items-center gap-2 shrink-0 font-bold"
+        >
+          <RefreshCw className={cn('w-3.5 h-3.5', testing && 'animate-spin')} />
+          {testing ? 'Ping Database...' : 'Test Connection'}
+        </button>
+      </div>
+
+      {pingResult && (
+        <div className={cn(
+          'mt-4 p-3.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in',
+          pingResult.ok
+            ? 'bg-status-green/10 border-status-green/30 text-status-green'
+            : 'bg-rose-500/10 border-rose-500/30 text-rose-500'
+        )}>
+          <div className="flex items-center gap-2 min-w-0">
+            {pingResult.ok ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertTriangle className="w-4 h-4 shrink-0" />}
+            <span className="truncate">{pingResult.msg}</span>
+          </div>
+          {pingResult.latency !== undefined && (
+            <span className="font-mono text-[11px] opacity-80 shrink-0">
+              {pingResult.latency}ms ping
+            </span>
+          )}
+        </div>
+      )}
     </section>
   );
 }
