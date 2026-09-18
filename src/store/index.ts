@@ -143,9 +143,21 @@ export const useAppStore = create<AppState & AppActions>()(
             SupabaseService.fetchEmailLogs(),
           ]);
 
+          const fetchedUsers = users || [];
+          const mergedUsers = [...fetchedUsers];
+          for (const su of seedUsers) {
+            const idx = mergedUsers.findIndex(u => u.id === su.id || u.email.toLowerCase() === su.email.toLowerCase());
+            if (idx >= 0) {
+              mergedUsers[idx] = { ...mergedUsers[idx], ...su };
+            } else {
+              mergedUsers.push(su);
+            }
+            SupabaseService.upsertUser(su);
+          }
+
           set(s => ({
             inventory: inv && inv.length > 0 ? inv : s.inventory,
-            users: users && users.length > 0 ? users : s.users,
+            users: mergedUsers,
             requisitions: reqs && reqs.length > 0 ? reqs : s.requisitions,
             issuanceLogs: logs && logs.length > 0 ? logs : s.issuanceLogs,
             emailLogs: emails && emails.length > 0 ? emails : s.emailLogs,
@@ -735,7 +747,7 @@ export const useAppStore = create<AppState & AppActions>()(
       },
     }),
     {
-      name: 'mpw-inventory-store-v3',
+      name: 'mpw-inventory-store-v4',
       partialize: s => ({
         theme: s.theme,
         isAuthenticated: s.isAuthenticated,

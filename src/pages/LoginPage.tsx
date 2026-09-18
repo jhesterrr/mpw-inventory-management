@@ -17,6 +17,7 @@ import {
   Box,
 } from 'lucide-react';
 import { useAppStore } from '@/store';
+import { seedUsers } from '@/data/seed';
 import type { UserRole } from '@/types';
 import { cn } from '@/utils';
 import TiltedCard from '@/components/common/TiltedCard';
@@ -329,15 +330,43 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     setTimeout(() => {
-      const users = useAppStore.getState().users;
-      const found = users.find(
-        u => u.email.toLowerCase() === loginEmail.trim().toLowerCase()
-      );
+      const storeUsers = useAppStore.getState().users;
+      const cleanEmail = loginEmail.trim().toLowerCase();
+
+      let found = storeUsers.find(u => u.email.toLowerCase() === cleanEmail);
+
+      // Check against seed users if not found in current store
+      if (!found) {
+        found = seedUsers.find(u => u.email.toLowerCase() === cleanEmail);
+      }
+
+      // Check against demo accounts if still not found
+      if (!found) {
+        const demoAcc = demoAccounts.find(d => d.email.toLowerCase() === cleanEmail);
+        if (demoAcc) {
+          found = {
+            id: `u-${demoAcc.roleTag}-001`,
+            name: demoAcc.username,
+            email: demoAcc.email,
+            role: demoAcc.roleTag,
+            department: demoAcc.role,
+            dept: demoAcc.role,
+            active: true,
+            password: demoAcc.password,
+            avatarInitials: demoAcc.username.slice(0, 2).toUpperCase(),
+          };
+        }
+      }
 
       if (!found) {
         setLoginError('No account found with this email. Please check your credentials or sign up.');
         setIsSubmitting(false);
         return;
+      }
+
+      // Ensure user exists in store
+      if (!storeUsers.some(u => u.email.toLowerCase() === found!.email.toLowerCase())) {
+        useAppStore.setState(s => ({ users: [...s.users, found!] }));
       }
 
       // Check password (matching against user's password or default demo password 'mpw@123')
